@@ -1,0 +1,9 @@
+
+ var s="Compiler";
+ for(var i=0;i< 3;i++) {
+   if(i==2){
+    consol.log("hello world");
+   }else {
+    consol.log("goodbye world");
+   }
+ }

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Products{% endblock %}
+{% block content %}
+<h2>Products List</h2>
+<div class="product-grid">
+    {% for product in products %}
+    <div class="product-card">
+        <img src="{{ product.image }}" alt="{{ product.name }}"/>
+        <h3>{{ product.name }}</h3>
+        <p>Price: ${{ product.price }}</p>
+        <a href="{{ url_for('product_detail', product_id=product.id) }}">View Details</a> |
+        <a href="{{ url_for('delete_product', product_id=product.id) }}">Delete</a>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

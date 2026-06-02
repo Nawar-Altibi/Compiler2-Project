@@ -1,0 +1,53 @@
+import { bootstrapApplication } from '@angular/platform-browser';
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  imports: [CommonModule],
+  template: `
+      <div style="display: flex">
+<div style="width: 30%;">
+<div *ngFor="let item of items; let i = index" (click)="selectItem(i)">
+<p>{{ item.name }}</p>
+<img [src]="item.image" alt="{{ item.name }}" style="width: 200px; height: 200px;"/>
+</div>
+</div>
+
+<div *ngIf="selectedItem !== null">
+<h2>{{ items[selectedItem].name }}</h2>
+<img [src]="items[selectedItem].image" alt="{{ items[selectedItem].name }}" style="width: 230px; height: 230px;"/>
+<p>{{ items[selectedItem].details }}</p>
+ </div>
+ </div>
+  `,
+})
+export class AppComponent {
+
+  items = [
+    { name: 'Product 1', image: 'assets/images/image1.jpg', details: 'Beautiful' },
+    { name: 'Product 2', image: 'assets/images/image2.jpg', details: 'Sweet' },
+    { name: 'Product 3', image: 'assets/images/image3.jpg', details: 'Nice' }
+  ];
+
+  selectedItem: number | null = null;
+
+  selectItem(index: number): void {
+    this.selectedItem = index;
+  }
+}
+
+// تفعيل التطبيق باستخدام bootstrapApplication
+
+bootstrapApplication(AppComponent)
+  .catch((err: any) => console.error(err));
+
+
+
+
+
+
+
+
+

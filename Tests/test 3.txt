@@ -1,0 +1,9 @@
+const a = 10;
+const b = 20;
+let result = a + b;
+
+if (result > 25) {
+  console.log("Sum is greater than 25");
+} else {
+  console.log("Sum is less than or equal to 25");
+}
