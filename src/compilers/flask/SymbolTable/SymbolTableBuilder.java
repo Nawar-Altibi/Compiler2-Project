@@ -290,6 +290,7 @@ public class SymbolTableBuilder extends ASTBaseVisitor<Void> {
         
         // إنشاء scope جديد للكلاس
         SymbolTable classScope = currentScope.enterScope(className, SymbolTable.ScopeType.CLASS);
+        node.setScope(classScope);
         allScopes.add(classScope); // حفظ scope للطباعة
         SymbolTable previousScope = currentScope;
         currentScope = classScope;
@@ -541,4 +542,6 @@ public class SymbolTableBuilder extends ASTBaseVisitor<Void> {
         return SymbolType.UNKNOWN;
     }
 }
+
+
 

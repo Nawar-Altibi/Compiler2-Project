@@ -23,7 +23,7 @@ public class UnifiedMain {
                 runFlaskCompiler(filePath);
             } else if (fileName.endsWith(".html")) {
                 System.out.println("Dispatcher: Detected HTML/CSS/Jinja file.");
-                runHtmlCssCompiler(filePath);
+                runHtmlCssCompiler(filePath, new java.util.HashMap<>());
             }    else {
                 System.out.println("Unknown file type: " + fileName);
                 System.out.println("Supported extensions: .py, .html, .txt, .ts");
@@ -75,6 +75,38 @@ public class UnifiedMain {
         System.out.println("\n====== HTML/CSS SYMBOL TABLE ======");
         compilers.html_css.SymbolTable.SymbolTableBuilder stBuilder = new compilers.html_css.SymbolTable.SymbolTableBuilder();
         compilers.html_css.SymbolTable.SymbolTable table = stBuilder.build(ast);
+        System.out.println(table.printSymbolTable());
+    }
+
+}
+  CommonTokenStream tokens = new CommonTokenStream(lexer);
+        compilers.html_css.antlr.HtmlCssParser parser = new compilers.html_css.antlr.HtmlCssParser(tokens);
+
+        ParseTree tree = parser.htmlDocument();
+
+        compilers.html_css.Visitor.HtmlAstBuilder builder = new compilers.html_css.Visitor.HtmlAstBuilder();
+        compilers.html_css.ast.HtmlNode ast = builder.visit(tree);
+
+        System.out.println("====== HTML/CSS SYMBOL TABLE BUILDING ======");
+        compilers.html_css.SymbolTable.SymbolTableBuilder stBuilder = new compilers.html_css.SymbolTable.SymbolTableBuilder();
+        compilers.html_css.SymbolTable.SymbolTable table = stBuilder.build(ast);
+
+        System.out.println("====== HTML/CSS SEMANTIC ANALYSIS ======");
+        compilers.flask.semantic.ErrorReporter errorReporter = new compilers.flask.semantic.ErrorReporter();
+        compilers.html_css.semantic.HtmlSemanticAnalyzer semanticAnalyzer = new compilers.html_css.semantic.HtmlSemanticAnalyzer(errorReporter, path, templateContexts);
+        semanticAnalyzer.analyze(ast);
+
+        if (errorReporter.hasErrors()) {
+            errorReporter.printErrors();
+        } else {
+            System.out.println("No semantic errors found.");
+        }
+
+        System.out.println("\n====== HTML/CSS AST ======");
+        compilers.html_css.Visitor.AstPrintVisitor printer = new compilers.html_css.Visitor.AstPrintVisitor();
+        ast.accept(printer);
+
+        System.out.println("\n====== HTML/CSS SYMBOL TABLE ======");
         System.out.println(table.printSymbolTable());
     }
 

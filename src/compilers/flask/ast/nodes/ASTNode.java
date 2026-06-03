@@ -2,6 +2,7 @@ package compilers.flask.ast.nodes;
 import compilers.flask.Visitor.ASTVisitor;
 import compilers.flask.ast.nodes.*;
 import compilers.flask.ast.nodes.helpers.*;
+import compilers.flask.SymbolTable.SymbolTable;
 
 /**
  * Base class for all AST nodes
@@ -13,6 +14,7 @@ public abstract class ASTNode {
     private int line;
     private int column;
     private ASTNode parent;
+    private SymbolTable scope;
 
     public int getLine() {
         return line;
@@ -36,6 +38,14 @@ public abstract class ASTNode {
 
     public void setParent(ASTNode parent) {
         this.parent = parent;
+    }
+
+    public SymbolTable getScope() {
+        return scope;
+    }
+
+    public void setScope(SymbolTable scope) {
+        this.scope = scope;
     }
 
     /**
