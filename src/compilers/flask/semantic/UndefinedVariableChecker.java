@@ -9,13 +9,11 @@ import compilers.flask.ast.nodes.statements.compound.ClassDefNode;
 import compilers.flask.ast.nodes.statements.ProgramNode;
 
 public class UndefinedVariableChecker extends ASTBaseVisitor<Void> {
-    private final SymbolTable rootSymbolTable;
     private final ErrorReporter errorReporter;
     private final String sourceFile;
     private SymbolTable currentScope;
 
     public UndefinedVariableChecker(SymbolTable symbolTable, ErrorReporter errorReporter, String sourceFile) {
-        this.rootSymbolTable = symbolTable;
         this.errorReporter = errorReporter;
         this.sourceFile = sourceFile;
         this.currentScope = symbolTable;
@@ -23,14 +21,18 @@ public class UndefinedVariableChecker extends ASTBaseVisitor<Void> {
 
     @Override
     public Void visitProgram(ProgramNode node) {
-        currentScope = node.getScope();
+        if (node.getScope() != null) {
+            currentScope = node.getScope();
+        }
         return super.visitProgram(node);
     }
 
     @Override
     public Void visitFunctionDef(FunctionDefNode node) {
         SymbolTable previousScope = currentScope;
-        currentScope = node.getScope();
+        if (node.getScope() != null) {
+            currentScope = node.getScope();
+        }
         super.visitFunctionDef(node);
         currentScope = previousScope;
         return null;
@@ -39,7 +41,9 @@ public class UndefinedVariableChecker extends ASTBaseVisitor<Void> {
     @Override
     public Void visitClassDef(ClassDefNode node) {
         SymbolTable previousScope = currentScope;
-        currentScope = node.getScope();
+        if (node.getScope() != null) {
+            currentScope = node.getScope();
+        }
         super.visitClassDef(node);
         currentScope = previousScope;
         return null;
@@ -47,6 +51,8 @@ public class UndefinedVariableChecker extends ASTBaseVisitor<Void> {
 
     @Override
     public Void visitIdentifier(IdentifierNode node) {
+        if (currentScope == null) return null;
+        
         String name = node.getName();
         // Check if defined in any scope
         SymbolEntry entry = currentScope.lookup(name);

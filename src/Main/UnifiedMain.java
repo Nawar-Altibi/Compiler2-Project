@@ -14,7 +14,7 @@ public class UnifiedMain {
         if (args.length == 0) {
             System.out.println("Please provide a test file path.");
             // Default to a test if none provided for convenience
-            args = new String[]{"Tests/test_flask.py"};
+            args = new String[]{"Tests/jinja_semantic_errors.html"};
         }
 
         String filePath = args[0];

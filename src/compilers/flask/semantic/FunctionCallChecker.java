@@ -11,13 +11,11 @@ import compilers.flask.ast.nodes.statements.compound.ClassDefNode;
 import compilers.flask.ast.nodes.statements.ProgramNode;
 
 public class FunctionCallChecker extends ASTBaseVisitor<Void> {
-    private final SymbolTable rootSymbolTable;
     private final ErrorReporter errorReporter;
     private final String sourceFile;
     private SymbolTable currentScope;
 
     public FunctionCallChecker(SymbolTable symbolTable, ErrorReporter errorReporter, String sourceFile) {
-        this.rootSymbolTable = symbolTable;
         this.errorReporter = errorReporter;
         this.sourceFile = sourceFile;
         this.currentScope = symbolTable;
@@ -25,14 +23,18 @@ public class FunctionCallChecker extends ASTBaseVisitor<Void> {
 
     @Override
     public Void visitProgram(ProgramNode node) {
-        currentScope = node.getScope();
+        if (node.getScope() != null) {
+            currentScope = node.getScope();
+        }
         return super.visitProgram(node);
     }
 
     @Override
     public Void visitFunctionDef(FunctionDefNode node) {
         SymbolTable previousScope = currentScope;
-        currentScope = node.getScope();
+        if (node.getScope() != null) {
+            currentScope = node.getScope();
+        }
         super.visitFunctionDef(node);
         currentScope = previousScope;
         return null;
@@ -41,7 +43,9 @@ public class FunctionCallChecker extends ASTBaseVisitor<Void> {
     @Override
     public Void visitClassDef(ClassDefNode node) {
         SymbolTable previousScope = currentScope;
-        currentScope = node.getScope();
+        if (node.getScope() != null) {
+            currentScope = node.getScope();
+        }
         super.visitClassDef(node);
         currentScope = previousScope;
         return null;
@@ -49,6 +53,8 @@ public class FunctionCallChecker extends ASTBaseVisitor<Void> {
 
     @Override
     public Void visitFunctionCall(FunctionCallNode node) {
+        if (currentScope == null) return super.visitFunctionCall(node);
+        
         Expression funcExpr = node.getFunction();
         if (funcExpr instanceof IdentifierNode) {
             String funcName = ((IdentifierNode) funcExpr).getName();

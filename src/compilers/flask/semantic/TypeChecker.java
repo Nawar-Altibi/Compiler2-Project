@@ -14,13 +14,11 @@ import compilers.flask.ast.nodes.statements.compound.ClassDefNode;
 import compilers.flask.ast.nodes.statements.ProgramNode;
 
 public class TypeChecker extends ASTBaseVisitor<SymbolType> {
-    private final SymbolTable rootSymbolTable;
     private final ErrorReporter errorReporter;
     private final String sourceFile;
     private SymbolTable currentScope;
 
     public TypeChecker(SymbolTable symbolTable, ErrorReporter errorReporter, String sourceFile) {
-        this.rootSymbolTable = symbolTable;
         this.errorReporter = errorReporter;
         this.sourceFile = sourceFile;
         this.currentScope = symbolTable;
@@ -28,14 +26,18 @@ public class TypeChecker extends ASTBaseVisitor<SymbolType> {
 
     @Override
     public SymbolType visitProgram(ProgramNode node) {
-        currentScope = node.getScope();
+        if (node.getScope() != null) {
+            currentScope = node.getScope();
+        }
         return super.visitProgram(node);
     }
 
     @Override
     public SymbolType visitFunctionDef(FunctionDefNode node) {
         SymbolTable previousScope = currentScope;
-        currentScope = node.getScope();
+        if (node.getScope() != null) {
+            currentScope = node.getScope();
+        }
         super.visitFunctionDef(node);
         currentScope = previousScope;
         return SymbolType.FUNCTION;
@@ -44,7 +46,9 @@ public class TypeChecker extends ASTBaseVisitor<SymbolType> {
     @Override
     public SymbolType visitClassDef(ClassDefNode node) {
         SymbolTable previousScope = currentScope;
-        currentScope = node.getScope();
+        if (node.getScope() != null) {
+            currentScope = node.getScope();
+        }
         super.visitClassDef(node);
         currentScope = previousScope;
         return SymbolType.CLASS;
@@ -54,7 +58,7 @@ public class TypeChecker extends ASTBaseVisitor<SymbolType> {
     public SymbolType visitAssignment(AssignmentNode node) {
         SymbolType valueType = node.getValue().accept(this);
         
-        if (node.getTarget() instanceof IdentifierNode) {
+        if (node.getTarget() instanceof IdentifierNode && currentScope != null) {
             String name = ((IdentifierNode) node.getTarget()).getName();
             SymbolEntry entry = currentScope.lookup(name);
             if (entry != null && entry.getType() != SymbolType.UNKNOWN && valueType != SymbolType.UNKNOWN) {
@@ -106,8 +110,6 @@ public class TypeChecker extends ASTBaseVisitor<SymbolType> {
         SymbolType leftType = node.getLeft().accept(this);
         for (Expression comp : node.getComparators()) {
             SymbolType compType = comp.accept(this);
-            // In Python, you can compare almost anything, but some comparisons might be flagged if we want to be strict.
-            // For now, we'll just assume they are valid if they are both defined.
         }
         return SymbolType.BOOLEAN;
     }
@@ -125,6 +127,7 @@ public class TypeChecker extends ASTBaseVisitor<SymbolType> {
 
     @Override
     public SymbolType visitIdentifier(IdentifierNode node) {
+        if (currentScope == null) return SymbolType.UNKNOWN;
         SymbolEntry entry = currentScope.lookup(node.getName());
         return entry != null ? entry.getType() : SymbolType.UNKNOWN;
     }

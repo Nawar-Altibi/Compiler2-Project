@@ -114,6 +114,7 @@ public class SymbolTableBuilder extends ASTBaseVisitor<Void> {
     public Void visitProgram(ProgramNode node) {
         // الـ program يبدأ في global scope
         currentScope = currentScope.getRootScope();
+        node.setScope(currentScope);
         
         // زيارة جميع الـ statements
         super.visitProgram(node);
@@ -243,6 +244,7 @@ public class SymbolTableBuilder extends ASTBaseVisitor<Void> {
         
         // إنشاء scope جديد للدالة
         SymbolTable functionScope = currentScope.enterScope(functionName, SymbolTable.ScopeType.FUNCTION);
+        node.setScope(functionScope);
         allScopes.add(functionScope); // حفظ scope للطباعة
         SymbolTable previousScope = currentScope;
         currentScope = functionScope;
