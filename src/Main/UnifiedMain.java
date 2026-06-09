@@ -66,10 +66,9 @@ public class UnifiedMain {
         System.out.println("\n====== Flask AST ======");
         compilers.flask.Visitor.ASTPrinter printer = new compilers.flask.Visitor.ASTPrinter();
         printer.visitProgram(ast);
-        System.out.println(printer.getOutput());
 
         System.out.println("\n====== Flask SYMBOL TABLE ======");
-        table.print();
+        System.out.println(compilers.flask.SymbolTable.SymbolTable.printSymbolTable(stBuilder.getAllScopes()));
 
         compilers.flask.semantic.TemplateContextCollector collector = new compilers.flask.semantic.TemplateContextCollector();
         ast.accept(collector);

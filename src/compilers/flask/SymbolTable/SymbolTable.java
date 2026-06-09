@@ -164,28 +164,65 @@ public class SymbolTable {
      * طباعة محتويات الـ Symbol Table (للتصحيح)
      */
     public void print() {
-        print(0);
+        System.out.print(printSymbolTable(Collections.singletonList(this)));
     }
 
-    private void print(int indent) {
-        StringBuilder indentBuilder = new StringBuilder();
-        for (int i = 0; i < indent; i++) {
-            indentBuilder.append("  ");
+    /**
+     * Format all scopes for terminal output (matches HTML/CSS symbol table style).
+     */
+    public static String printSymbolTable(List<SymbolTable> allScopes) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Symbol Table\n============\n\n");
+
+        if (allScopes == null || allScopes.isEmpty()) {
+            sb.append("(Empty symbol table)\n");
+            return sb.toString();
         }
-        String indentStr = indentBuilder.toString();
-        
-        System.out.println(indentStr + "Scope: " + scopeName + " (" + scopeType + ")");
-        
-        if (symbols.isEmpty()) {
-            System.out.println(indentStr + "  (empty)");
-        } else {
-            for (SymbolEntry entry : symbols.values()) {
-                System.out.println(indentStr + "  " + entry);
+
+        int totalSymbols = 0;
+        for (SymbolTable scope : allScopes) {
+            String scopeLabel = scope.getScopeName() + " [" + scope.getScopeType() + "]";
+            sb.append("Scope: ").append(scopeLabel).append("\n");
+            sb.append("  ");
+            for (int i = 0; i < 50; i++) {
+                sb.append("-");
             }
+            sb.append("\n");
+
+            List<SymbolEntry> symbols = new ArrayList<>(scope.getAllSymbols());
+            symbols.sort(Comparator
+                    .comparingInt((SymbolEntry e) -> e.getLine() > 0 ? e.getLine() : Integer.MAX_VALUE)
+                    .thenComparing(SymbolEntry::getName));
+
+            if (symbols.isEmpty()) {
+                sb.append("  (empty)\n\n");
+                continue;
+            }
+
+            for (SymbolEntry entry : symbols) {
+                int line = entry.getLine() > 0 ? entry.getLine() : 0;
+                sb.append(String.format("  %-20s %-18s line %-5d\n",
+                        entry.getName(),
+                        "[" + formatTypeLabel(entry) + "]",
+                        line));
+                totalSymbols++;
+            }
+            sb.append("\n");
         }
-        
-        // طباعة child scopes (إذا كان هناك)
-        // Note: في التطبيق الحالي، child scopes هي objects منفصلة
+
+        sb.append("Total symbols: ").append(totalSymbols).append("\n");
+        sb.append("Total scopes: ").append(allScopes.size()).append("\n");
+        return sb.toString();
+    }
+
+    private static String formatTypeLabel(SymbolEntry entry) {
+        if (entry.getType() != SymbolType.UNKNOWN) {
+            return entry.getType().getName();
+        }
+        if (entry.getKind() != null) {
+            return entry.getKind().name().toLowerCase();
+        }
+        return "unknown";
     }
 
     /**

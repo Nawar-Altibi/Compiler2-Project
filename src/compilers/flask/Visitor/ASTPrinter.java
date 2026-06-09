@@ -10,72 +10,44 @@ import compilers.flask.ast.nodes.statements.compound.*;
 import compilers.flask.ast.nodes.statements.imports.*;
 import compilers.flask.ast.nodes.statements.simple.*;
 
-import java.util.List;
-
 public class ASTPrinter extends ASTBaseVisitor<Void> {
 
-    private StringBuilder output;
-    private int indentLevel;
-    private static final String BRANCH = " ├── ";
-    private static final String LAST_BRANCH = " └── ";
-    private static final String CONTINUE = " │   ";
-    private static final String EMPTY = "     ";
+    private int indent = 0;
 
-    public ASTPrinter() {
-        this.output = new StringBuilder();
-        this.indentLevel = 0;
+    private void ind() {
+        System.out.print("  ".repeat(Math.max(0, indent)));
     }
 
-    public void reset() {
-        this.output = new StringBuilder();
-        this.indentLevel = 0;
-    }
-
-    public String getOutput() {
-        return output.toString();
-    }
-
-    private void printNode(String nodeName, String attributes) {
-        String indent = getIndent();
-        String prefix = indentLevel > 0 ? (isLastChild() ? LAST_BRANCH : BRANCH) : "";
-        output.append(prefix);
-        output.append(nodeName);
-        if (attributes != null && !attributes.isEmpty()) {
-            output.append(" ").append(attributes);
+    private void printNode(String nodeName, int line, int col, String extra) {
+        ind();
+        System.out.print(nodeName);
+        String loc = formatLocation(line, col);
+        if (!loc.isEmpty()) {
+            System.out.print(" " + loc);
         }
-        output.append("\n");
+        if (extra != null && !extra.isEmpty()) {
+            System.out.print(" " + extra);
+        }
+        System.out.println();
     }
 
-    private void printNode(String nodeName) {
-        printNode(nodeName, null);
+    private void printNode(String nodeName, int line, int col) {
+        printNode(nodeName, line, col, null);
     }
 
-    private String getIndent() {
-        // Indentation is handled by the prefix in printNode
-        return "";
+    private void printLabel(String label) {
+        ind();
+        System.out.println(label);
     }
 
-    private boolean isLastChild() {
-        // This is a simplified version - in a real implementation,
-        // we'd track the child index in the parent
-        return false;
-    }
-
-    private boolean isLastChildAtLevel(int level) {
-        // Simplified - would need proper tracking
-        return false;
-    }
-
-    private void increaseIndent() {
-        indentLevel++;
-    }
-
-    private void decreaseIndent() {
-        indentLevel--;
-    }
-
-    private String formatLineNumber(int line) {
-        return line > 0 ? "(line " + line + ")" : "";
+    private String formatLocation(int line, int col) {
+        if (line <= 0) {
+            return "";
+        }
+        if (col > 0) {
+            return "(line=" + line + ", col=" + col + ")";
+        }
+        return "(line=" + line + ")";
     }
 
     // ========================================
@@ -84,10 +56,10 @@ public class ASTPrinter extends ASTBaseVisitor<Void> {
 
     @Override
     public Void visitProgram(ProgramNode node) {
-        printNode("ProgramNode", formatLineNumber(node.getLine()));
-        increaseIndent();
+        printNode("ProgramNode", node.getLine(), node.getColumn());
+        indent++;
         super.visitProgram(node);
-        decreaseIndent();
+        indent--;
         return null;
     }
 
@@ -97,111 +69,111 @@ public class ASTPrinter extends ASTBaseVisitor<Void> {
 
     @Override
     public Void visitAssignment(AssignmentNode node) {
-        printNode("AssignmentNode", "operator=" + node.getOperator() + " " + formatLineNumber(node.getLine()));
-        increaseIndent();
-        printNode("Target:");
-        increaseIndent();
+        printNode("AssignmentNode", node.getLine(), node.getColumn(), "operator=" + node.getOperator());
+        indent++;
+        printLabel("Target:");
+        indent++;
         node.getTarget().accept(this);
-        decreaseIndent();
-        printNode("Value:");
-        increaseIndent();
+        indent--;
+        printLabel("Value:");
+        indent++;
         node.getValue().accept(this);
-        decreaseIndent();
-        decreaseIndent();
+        indent--;
+        indent--;
         return null;
     }
 
     @Override
     public Void visitExpressionStatement(ExpressionStatementNode node) {
-        printNode("ExpressionStatementNode", formatLineNumber(node.getLine()));
-        increaseIndent();
+        printNode("ExpressionStatementNode", node.getLine(), node.getColumn());
+        indent++;
         super.visitExpressionStatement(node);
-        decreaseIndent();
+        indent--;
         return null;
     }
 
     @Override
     public Void visitReturn(ReturnNode node) {
-        printNode("ReturnNode", formatLineNumber(node.getLine()));
-        increaseIndent();
+        printNode("ReturnNode", node.getLine(), node.getColumn());
+        indent++;
         super.visitReturn(node);
-        decreaseIndent();
+        indent--;
         return null;
     }
 
     @Override
     public Void visitPass(PassNode node) {
-        printNode("PassNode", formatLineNumber(node.getLine()));
+        printNode("PassNode", node.getLine(), node.getColumn());
         return null;
     }
 
     @Override
     public Void visitBreak(BreakNode node) {
-        printNode("BreakNode", formatLineNumber(node.getLine()));
+        printNode("BreakNode", node.getLine(), node.getColumn());
         return null;
     }
 
     @Override
     public Void visitContinue(ContinueNode node) {
-        printNode("ContinueNode", formatLineNumber(node.getLine()));
+        printNode("ContinueNode", node.getLine(), node.getColumn());
         return null;
     }
 
     @Override
     public Void visitAssert(AssertNode node) {
-        printNode("AssertNode", formatLineNumber(node.getLine()));
-        increaseIndent();
-        printNode("Test:");
-        increaseIndent();
+        printNode("AssertNode", node.getLine(), node.getColumn());
+        indent++;
+        printLabel("Test:");
+        indent++;
         node.getTest().accept(this);
-        decreaseIndent();
+        indent--;
         if (node.getMessage() != null) {
-            printNode("Message:");
-            increaseIndent();
+            printLabel("Message:");
+            indent++;
             node.getMessage().accept(this);
-            decreaseIndent();
+            indent--;
         }
-        decreaseIndent();
+        indent--;
         return null;
     }
 
     @Override
     public Void visitDel(DelNode node) {
-        printNode("DelNode", formatLineNumber(node.getLine()));
-        increaseIndent();
+        printNode("DelNode", node.getLine(), node.getColumn());
+        indent++;
         for (int i = 0; i < node.getTargets().size(); i++) {
-            printNode("Target[" + i + "]:");
-            increaseIndent();
+            printLabel("Target[" + i + "]:");
+            indent++;
             node.getTargets().get(i).accept(this);
-            decreaseIndent();
+            indent--;
         }
-        decreaseIndent();
+        indent--;
         return null;
     }
 
     @Override
     public Void visitGlobal(GlobalNode node) {
-        printNode("GlobalNode", "names=" + String.join(", ", node.getNames()) + " " + formatLineNumber(node.getLine()));
+        printNode("GlobalNode", node.getLine(), node.getColumn(), "names=" + String.join(", ", node.getNames()));
         return null;
     }
 
     @Override
     public Void visitRaise(RaiseNode node) {
-        printNode("RaiseNode", formatLineNumber(node.getLine()));
-        increaseIndent();
+        printNode("RaiseNode", node.getLine(), node.getColumn());
+        indent++;
         if (node.getException() != null) {
-            printNode("Exception:");
-            increaseIndent();
+            printLabel("Exception:");
+            indent++;
             node.getException().accept(this);
-            decreaseIndent();
+            indent--;
         }
         if (node.getCause() != null) {
-            printNode("Cause:");
-            increaseIndent();
+            printLabel("Cause:");
+            indent++;
             node.getCause().accept(this);
-            decreaseIndent();
+            indent--;
         }
-        decreaseIndent();
+        indent--;
         return null;
     }
 
@@ -215,7 +187,7 @@ public class ASTPrinter extends ASTBaseVisitor<Void> {
         if (node.hasAlias()) {
             attrs += ", as=" + node.getAsName();
         }
-        printNode("ImportNode", attrs + " " + formatLineNumber(node.getLine()));
+        printNode("ImportNode", node.getLine(), node.getColumn(), attrs);
         return null;
     }
 
@@ -227,23 +199,23 @@ public class ASTPrinter extends ASTBaseVisitor<Void> {
         } else {
             attrs.append(", items=").append(node.getItemCount());
         }
-        printNode("FromImportNode", attrs.toString() + " " + formatLineNumber(node.getLine()));
+        printNode("FromImportNode", node.getLine(), node.getColumn(), attrs.toString());
         
         // Print individual import items if not import all
         if (!node.isImportAll() && !node.getItems().isEmpty()) {
-            increaseIndent();
-            printNode("Items:");
-            increaseIndent();
+            indent++;
+            printLabel("Items:");
+            indent++;
             for (int i = 0; i < node.getItems().size(); i++) {
                 FromImportNode.ImportItem item = node.getItems().get(i);
                 String itemStr = "name=" + item.getName();
                 if (item.hasAlias()) {
                     itemStr += ", as=" + item.getAsName();
                 }
-                printNode("Item[" + i + "]", itemStr);
+                printNode("Item[" + i + "]", 0, 0, itemStr);
             }
-            decreaseIndent();
-            decreaseIndent();
+            indent--;
+            indent--;
         }
         
         return null;
@@ -260,51 +232,51 @@ public class ASTPrinter extends ASTBaseVisitor<Void> {
         if (node.hasDecorators()) {
             attrs.append(", decorators=").append(node.getDecorators().size());
         }
-        printNode("FunctionDefNode", attrs.toString() + " " + formatLineNumber(node.getLine()));
-        increaseIndent();
+        printNode("FunctionDefNode", node.getLine(), node.getColumn(), attrs.toString());
+        indent++;
 
         if (node.hasDecorators()) {
-            printNode("Decorators:");
-            increaseIndent();
+            printLabel("Decorators:");
+            indent++;
             for (Decorator decorator : node.getDecorators()) {
-                printNode("Decorator:");
-                increaseIndent();
-                printNode("Name:");
-                increaseIndent();
+                printLabel("Decorator:");
+                indent++;
+                printLabel("Name:");
+                indent++;
                 decorator.getName().accept(this);
-                decreaseIndent();
+                indent--;
                 
                 if (decorator.hasArgs()) {
-                    printNode("Args:");
-                    increaseIndent();
+                    printLabel("Args:");
+                    indent++;
                     for (int i = 0; i < decorator.getArgs().size(); i++) {
-                        printNode("Arg[" + i + "]:");
-                        increaseIndent();
+                        printLabel("Arg[" + i + "]:");
+                        indent++;
                         decorator.getArgs().get(i).accept(this);
-                        decreaseIndent();
+                        indent--;
                     }
-                    decreaseIndent();
+                    indent--;
                 }
                 
                 if (decorator.hasKwargs()) {
-                    printNode("Kwargs:");
-                    increaseIndent();
+                    printLabel("Kwargs:");
+                    indent++;
                     for (String key : decorator.getKwargs().keySet()) {
-                        printNode("Kwarg " + key + ":");
-                        increaseIndent();
+                        printLabel("Kwarg " + key + ":");
+                        indent++;
                         decorator.getKwargs().get(key).accept(this);
-                        decreaseIndent();
+                        indent--;
                     }
-                    decreaseIndent();
+                    indent--;
                 }
-                decreaseIndent();
+                indent--;
             }
-            decreaseIndent();
+            indent--;
         }
 
         if (node.hasParameters()) {
-            printNode("Parameters:");
-            increaseIndent();
+            printLabel("Parameters:");
+            indent++;
             for (Parameter param : node.getParameters()) {
                 String paramStr = "name=" + param.getName();
                 if (param.hasTypeHint()) {
@@ -313,238 +285,238 @@ public class ASTPrinter extends ASTBaseVisitor<Void> {
                 if (param.hasDefault()) {
                     paramStr += ", default=...";
                 }
-                printNode("Parameter", paramStr);
+                printNode("Parameter", 0, 0, paramStr);
             }
-            decreaseIndent();
+            indent--;
         }
 
         if (node.getReturnType() != null) {
-            printNode("ReturnType:");
-            increaseIndent();
+            printLabel("ReturnType:");
+            indent++;
             node.getReturnType().accept(this);
-            decreaseIndent();
+            indent--;
         }
 
-        printNode("Body:");
-        increaseIndent();
+        printLabel("Body:");
+        indent++;
         for (Statement stmt : node.getBody()) {
             stmt.accept(this);
         }
-        decreaseIndent();
-        decreaseIndent();
+        indent--;
+        indent--;
         return null;
     }
 
     @Override
     public Void visitIfStatement(IfStatementNode node) {
-        printNode("IfStatementNode", formatLineNumber(node.getLine()));
-        increaseIndent();
+        printNode("IfStatementNode", node.getLine(), node.getColumn());
+        indent++;
 
-        printNode("Condition:");
-        increaseIndent();
+        printLabel("Condition:");
+        indent++;
         node.getCondition().accept(this);
-        decreaseIndent();
+        indent--;
 
-        printNode("Then:");
-        increaseIndent();
+        printLabel("Then:");
+        indent++;
         for (Statement stmt : node.getThenBody()) {
             stmt.accept(this);
         }
-        decreaseIndent();
+        indent--;
 
         if (node.hasElif()) {
-            printNode("ElifClauses:");
-            increaseIndent();
+            printLabel("ElifClauses:");
+            indent++;
             for (IfStatementNode.ElifClause elif : node.getElifClauses()) {
-                printNode("ElifClause:");
-                increaseIndent();
-                printNode("Condition:");
-                increaseIndent();
+                printLabel("ElifClause:");
+                indent++;
+                printLabel("Condition:");
+                indent++;
                 elif.getCondition().accept(this);
-                decreaseIndent();
-                printNode("Body:");
-                increaseIndent();
+                indent--;
+                printLabel("Body:");
+                indent++;
                 for (Statement stmt : elif.getBody()) {
                     stmt.accept(this);
                 }
-                decreaseIndent();
-                decreaseIndent();
+                indent--;
+                indent--;
             }
-            decreaseIndent();
+            indent--;
         }
 
         if (node.hasElse()) {
-            printNode("Else:");
-            increaseIndent();
+            printLabel("Else:");
+            indent++;
             for (Statement stmt : node.getElseBody()) {
                 stmt.accept(this);
             }
-            decreaseIndent();
+            indent--;
         }
 
-        decreaseIndent();
+        indent--;
         return null;
     }
 
     @Override
     public Void visitForStatement(ForStatementNode node) {
-        printNode("ForStatementNode", formatLineNumber(node.getLine()));
-        increaseIndent();
+        printNode("ForStatementNode", node.getLine(), node.getColumn());
+        indent++;
 
-        printNode("Target:");
-        increaseIndent();
+        printLabel("Target:");
+        indent++;
         node.getTarget().accept(this);
-        decreaseIndent();
+        indent--;
 
-        printNode("Iterable:");
-        increaseIndent();
+        printLabel("Iterable:");
+        indent++;
         node.getIterable().accept(this);
-        decreaseIndent();
+        indent--;
 
-        printNode("Body:");
-        increaseIndent();
+        printLabel("Body:");
+        indent++;
         for (Statement stmt : node.getBody()) {
             stmt.accept(this);
         }
-        decreaseIndent();
+        indent--;
 
         if (node.hasElse()) {
-            printNode("Else:");
-            increaseIndent();
+            printLabel("Else:");
+            indent++;
             for (Statement stmt : node.getElseBody()) {
                 stmt.accept(this);
             }
-            decreaseIndent();
+            indent--;
         }
 
-        decreaseIndent();
+        indent--;
         return null;
     }
 
     @Override
     public Void visitWhileStatement(WhileStatementNode node) {
-        printNode("WhileStatementNode", formatLineNumber(node.getLine()));
-        increaseIndent();
+        printNode("WhileStatementNode", node.getLine(), node.getColumn());
+        indent++;
 
-        printNode("Condition:");
-        increaseIndent();
+        printLabel("Condition:");
+        indent++;
         node.getCondition().accept(this);
-        decreaseIndent();
+        indent--;
 
-        printNode("Body:");
-        increaseIndent();
+        printLabel("Body:");
+        indent++;
         for (Statement stmt : node.getBody()) {
             stmt.accept(this);
         }
-        decreaseIndent();
+        indent--;
 
         if (node.hasElse()) {
-            printNode("Else:");
-            increaseIndent();
+            printLabel("Else:");
+            indent++;
             for (Statement stmt : node.getElseBody()) {
                 stmt.accept(this);
             }
-            decreaseIndent();
+            indent--;
         }
 
-        decreaseIndent();
+        indent--;
         return null;
     }
 
     @Override
     public Void visitWithStatement(WithStatementNode node) {
-        printNode("WithStatementNode", formatLineNumber(node.getLine()));
-        increaseIndent();
+        printNode("WithStatementNode", node.getLine(), node.getColumn());
+        indent++;
 
-        printNode("Items:");
-        increaseIndent();
+        printLabel("Items:");
+        indent++;
         for (WithItem item : node.getItems()) {
-            printNode("WithItem:");
-            increaseIndent();
-            printNode("Context:");
-            increaseIndent();
+            printLabel("WithItem:");
+            indent++;
+            printLabel("Context:");
+            indent++;
             item.getContextExpr().accept(this);
-            decreaseIndent();
+            indent--;
             if (item.getAsName() != null) {
-                printNode("As:");
-                increaseIndent();
+                printLabel("As:");
+                indent++;
                 item.getAsName().accept(this);
-                decreaseIndent();
+                indent--;
             }
-            decreaseIndent();
+            indent--;
         }
-        decreaseIndent();
+        indent--;
 
-        printNode("Body:");
-        increaseIndent();
+        printLabel("Body:");
+        indent++;
         for (Statement stmt : node.getBody()) {
             stmt.accept(this);
         }
-        decreaseIndent();
-        decreaseIndent();
+        indent--;
+        indent--;
         return null;
     }
 
     @Override
     public Void visitTryStatement(TryStatementNode node) {
-        printNode("TryStatementNode", formatLineNumber(node.getLine()));
-        increaseIndent();
+        printNode("TryStatementNode", node.getLine(), node.getColumn());
+        indent++;
 
-        printNode("Try:");
-        increaseIndent();
+        printLabel("Try:");
+        indent++;
         for (Statement stmt : node.getTryBody()) {
             stmt.accept(this);
         }
-        decreaseIndent();
+        indent--;
 
         if (node.hasExcept()) {
-            printNode("ExceptClauses:");
-            increaseIndent();
+            printLabel("ExceptClauses:");
+            indent++;
             for (ExceptClause except : node.getExceptClauses()) {
-                printNode("ExceptClause:");
-                increaseIndent();
+                printLabel("ExceptClause:");
+                indent++;
                 if (except.getExceptionType() != null) {
-                    printNode("ExceptionType:");
-                    increaseIndent();
+                    printLabel("ExceptionType:");
+                    indent++;
                     except.getExceptionType().accept(this);
-                    decreaseIndent();
+                    indent--;
                 }
                 if (except.hasAsName()) {
-                    printNode("As:");
-                    increaseIndent();
-                    printNode("IdentifierNode", "name=" + except.getAsName());
-                    decreaseIndent();
+                    printLabel("As:");
+                    indent++;
+                    printNode("IdentifierNode", 0, 0, "name=" + except.getAsName());
+                    indent--;
                 }
-                printNode("Body:");
-                increaseIndent();
+                printLabel("Body:");
+                indent++;
                 for (Statement stmt : except.getBody()) {
                     stmt.accept(this);
                 }
-                decreaseIndent();
-                decreaseIndent();
+                indent--;
+                indent--;
             }
-            decreaseIndent();
+            indent--;
         }
 
         if (node.hasElse()) {
-            printNode("Else:");
-            increaseIndent();
+            printLabel("Else:");
+            indent++;
             for (Statement stmt : node.getElseBody()) {
                 stmt.accept(this);
             }
-            decreaseIndent();
+            indent--;
         }
 
         if (node.hasFinally()) {
-            printNode("Finally:");
-            increaseIndent();
+            printLabel("Finally:");
+            indent++;
             for (Statement stmt : node.getFinallyBody()) {
                 stmt.accept(this);
             }
-            decreaseIndent();
+            indent--;
         }
 
-        decreaseIndent();
+        indent--;
         return null;
     }
 
@@ -557,64 +529,64 @@ public class ASTPrinter extends ASTBaseVisitor<Void> {
         if (node.hasDecorators()) {
             attrs.append(", decorators=").append(node.getDecorators().size());
         }
-        printNode("ClassDefNode", attrs.toString() + " " + formatLineNumber(node.getLine()));
-        increaseIndent();
+        printNode("ClassDefNode", node.getLine(), node.getColumn(), attrs.toString());
+        indent++;
 
         if (node.hasDecorators()) {
-            printNode("Decorators:");
-            increaseIndent();
+            printLabel("Decorators:");
+            indent++;
             for (Decorator decorator : node.getDecorators()) {
-                printNode("Decorator:");
-                increaseIndent();
-                printNode("Name:");
-                increaseIndent();
+                printLabel("Decorator:");
+                indent++;
+                printLabel("Name:");
+                indent++;
                 decorator.getName().accept(this);
-                decreaseIndent();
+                indent--;
                 
                 if (decorator.hasArgs()) {
-                    printNode("Args:");
-                    increaseIndent();
+                    printLabel("Args:");
+                    indent++;
                     for (int i = 0; i < decorator.getArgs().size(); i++) {
-                        printNode("Arg[" + i + "]:");
-                        increaseIndent();
+                        printLabel("Arg[" + i + "]:");
+                        indent++;
                         decorator.getArgs().get(i).accept(this);
-                        decreaseIndent();
+                        indent--;
                     }
-                    decreaseIndent();
+                    indent--;
                 }
                 
                 if (decorator.hasKwargs()) {
-                    printNode("Kwargs:");
-                    increaseIndent();
+                    printLabel("Kwargs:");
+                    indent++;
                     for (String key : decorator.getKwargs().keySet()) {
-                        printNode("Kwarg " + key + ":");
-                        increaseIndent();
+                        printLabel("Kwarg " + key + ":");
+                        indent++;
                         decorator.getKwargs().get(key).accept(this);
-                        decreaseIndent();
+                        indent--;
                     }
-                    decreaseIndent();
+                    indent--;
                 }
-                decreaseIndent();
+                indent--;
             }
-            decreaseIndent();
+            indent--;
         }
 
         if (node.hasBases()) {
-            printNode("Bases:");
-            increaseIndent();
+            printLabel("Bases:");
+            indent++;
             for (Expression base : node.getBases()) {
                 base.accept(this);
             }
-            decreaseIndent();
+            indent--;
         }
 
-        printNode("Body:");
-        increaseIndent();
+        printLabel("Body:");
+        indent++;
         for (Statement stmt : node.getBody()) {
             stmt.accept(this);
         }
-        decreaseIndent();
-        decreaseIndent();
+        indent--;
+        indent--;
         return null;
     }
 
@@ -624,42 +596,42 @@ public class ASTPrinter extends ASTBaseVisitor<Void> {
 
     @Override
     public Void visitBinaryOp(BinaryOpNode node) {
-        printNode("BinaryOpNode", "operator=" + node.getOperator() + " " + formatLineNumber(node.getLine()));
-        increaseIndent();
-        printNode("Left:");
-        increaseIndent();
+        printNode("BinaryOpNode", node.getLine(), node.getColumn(), "operator=" + node.getOperator());
+        indent++;
+        printLabel("Left:");
+        indent++;
         node.getLeft().accept(this);
-        decreaseIndent();
-        printNode("Right:");
-        increaseIndent();
+        indent--;
+        printLabel("Right:");
+        indent++;
         node.getRight().accept(this);
-        decreaseIndent();
-        decreaseIndent();
+        indent--;
+        indent--;
         return null;
     }
 
     @Override
     public Void visitUnaryOp(UnaryOpNode node) {
-        printNode("UnaryOpNode", "operator=" + node.getOperator() + " " + formatLineNumber(node.getLine()));
-        increaseIndent();
-        printNode("Operand:");
-        increaseIndent();
+        printNode("UnaryOpNode", node.getLine(), node.getColumn(), "operator=" + node.getOperator());
+        indent++;
+        printLabel("Operand:");
+        indent++;
         node.getOperand().accept(this);
-        decreaseIndent();
-        decreaseIndent();
+        indent--;
+        indent--;
         return null;
     }
 
     @Override
     public Void visitCompare(CompareNode node) {
-        printNode("CompareNode", formatLineNumber(node.getLine()));
-        increaseIndent();
+        printNode("CompareNode", node.getLine(), node.getColumn());
+        indent++;
 
         // Left expression
-        printNode("Left:");
-        increaseIndent();
+        printLabel("Left:");
+        indent++;
         node.getLeft().accept(this);
-        decreaseIndent();
+        indent--;
 
         // Print operators and comparators in sequence
         for (int i = 0; i < node.getComparisonCount(); i++) {
@@ -692,16 +664,16 @@ public class ASTPrinter extends ASTBaseVisitor<Void> {
                     opStr = "is";
                     break;
             }
-            printNode("Operator: " + opStr);
+            printLabel("Operator: " + opStr);
 
             // Print comparator
-            printNode("Comparator:");
-            increaseIndent();
+            printLabel("Comparator:");
+            indent++;
             node.getComparators().get(i).accept(this);
-            decreaseIndent();
+            indent--;
         }
 
-        decreaseIndent();
+        indent--;
         return null;
     }
 
@@ -711,64 +683,63 @@ public class ASTPrinter extends ASTBaseVisitor<Void> {
 
     @Override
     public Void visitFunctionCall(FunctionCallNode node) {
-        printNode("FunctionCallNode", "args=" + node.getArgs().size() + ", kwargs=" + node.getKwargs().size() + " "
-                + formatLineNumber(node.getLine()));
-        increaseIndent();
-        printNode("Function:");
-        increaseIndent();
+        printNode("FunctionCallNode", node.getLine(), node.getColumn(), "args=" + node.getArgs().size() + ", kwargs=" + node.getKwargs().size());
+        indent++;
+        printLabel("Function:");
+        indent++;
         node.getFunction().accept(this);
-        decreaseIndent();
+        indent--;
         if (!node.getArgs().isEmpty()) {
-            printNode("Args:");
-            increaseIndent();
+            printLabel("Args:");
+            indent++;
             for (int i = 0; i < node.getArgs().size(); i++) {
-                printNode("Arg[" + i + "]:");
-                increaseIndent();
+                printLabel("Arg[" + i + "]:");
+                indent++;
                 node.getArgs().get(i).accept(this);
-                decreaseIndent();
+                indent--;
             }
-            decreaseIndent();
+            indent--;
         }
         if (!node.getKwargs().isEmpty()) {
-            printNode("Kwargs:");
-            increaseIndent();
+            printLabel("Kwargs:");
+            indent++;
             for (String key : node.getKwargs().keySet()) {
-                printNode("Kwarg " + key + ":");
-                increaseIndent();
+                printLabel("Kwarg " + key + ":");
+                indent++;
                 node.getKwargs().get(key).accept(this);
-                decreaseIndent();
+                indent--;
             }
-            decreaseIndent();
+            indent--;
         }
-        decreaseIndent();
+        indent--;
         return null;
     }
 
     @Override
     public Void visitAttributeAccess(AttributeAccessNode node) {
-        printNode("AttributeAccessNode", "attribute=" + node.getAttribute() + " " + formatLineNumber(node.getLine()));
-        increaseIndent();
-        printNode("Object:");
-        increaseIndent();
+        printNode("AttributeAccessNode", node.getLine(), node.getColumn(), "attribute=" + node.getAttribute());
+        indent++;
+        printLabel("Object:");
+        indent++;
         node.getObject().accept(this);
-        decreaseIndent();
-        decreaseIndent();
+        indent--;
+        indent--;
         return null;
     }
 
     @Override
     public Void visitSubscript(SubscriptNode node) {
-        printNode("SubscriptNode", formatLineNumber(node.getLine()));
-        increaseIndent();
-        printNode("Object:");
-        increaseIndent();
+        printNode("SubscriptNode", node.getLine(), node.getColumn());
+        indent++;
+        printLabel("Object:");
+        indent++;
         node.getObject().accept(this);
-        decreaseIndent();
-        printNode("Index:");
-        increaseIndent();
+        indent--;
+        printLabel("Index:");
+        indent++;
         node.getIndex().accept(this);
-        decreaseIndent();
-        decreaseIndent();
+        indent--;
+        indent--;
         return null;
     }
 
@@ -778,7 +749,7 @@ public class ASTPrinter extends ASTBaseVisitor<Void> {
 
     @Override
     public Void visitIdentifier(IdentifierNode node) {
-        printNode("IdentifierNode", "name=" + node.getName() + " " + formatLineNumber(node.getLine()));
+        printNode("IdentifierNode", node.getLine(), node.getColumn(), "name=" + node.getName());
         return null;
     }
 
@@ -788,58 +759,57 @@ public class ASTPrinter extends ASTBaseVisitor<Void> {
         if (node.getLiteralType() == LiteralNode.LiteralType.STRING) {
             valueStr = "\"" + valueStr + "\"";
         }
-        printNode("LiteralNode",
-                "type=" + node.getLiteralType() + ", value=" + valueStr + " " + formatLineNumber(node.getLine()));
+        printNode("LiteralNode", node.getLine(), node.getColumn(), "type=" + node.getLiteralType() + ", value=" + valueStr);
         return null;
     }
 
     @Override
     public Void visitList(ListNode node) {
-        printNode("ListNode", "size=" + node.size() + " " + formatLineNumber(node.getLine()));
-        increaseIndent();
+        printNode("ListNode", node.getLine(), node.getColumn(), "size=" + node.size());
+        indent++;
         for (int i = 0; i < node.getElements().size(); i++) {
-            printNode("Element[" + i + "]:");
-            increaseIndent();
+            printLabel("Element[" + i + "]:");
+            indent++;
             node.getElements().get(i).accept(this);
-            decreaseIndent();
+            indent--;
         }
-        decreaseIndent();
+        indent--;
         return null;
     }
 
     @Override
     public Void visitDict(DictNode node) {
-        printNode("DictNode", "size=" + node.size() + " " + formatLineNumber(node.getLine()));
-        increaseIndent();
+        printNode("DictNode", node.getLine(), node.getColumn(), "size=" + node.size());
+        indent++;
         for (int i = 0; i < node.getItems().size(); i++) {
             DictNode.DictItem item = node.getItems().get(i);
-            printNode("Item[" + i + "]:");
-            increaseIndent();
-            printNode("Key:");
-            increaseIndent();
+            printLabel("Item[" + i + "]:");
+            indent++;
+            printLabel("Key:");
+            indent++;
             item.getKey().accept(this);
-            decreaseIndent();
-            printNode("Value:");
-            increaseIndent();
+            indent--;
+            printLabel("Value:");
+            indent++;
             item.getValue().accept(this);
-            decreaseIndent();
-            decreaseIndent();
+            indent--;
+            indent--;
         }
-        decreaseIndent();
+        indent--;
         return null;
     }
 
     @Override
     public Void visitSet(SetNode node) {
-        printNode("SetNode", "size=" + node.size() + " " + formatLineNumber(node.getLine()));
-        increaseIndent();
+        printNode("SetNode", node.getLine(), node.getColumn(), "size=" + node.size());
+        indent++;
         for (int i = 0; i < node.getElements().size(); i++) {
-            printNode("Element[" + i + "]:");
-            increaseIndent();
+            printLabel("Element[" + i + "]:");
+            indent++;
             node.getElements().get(i).accept(this);
-            decreaseIndent();
+            indent--;
         }
-        decreaseIndent();
+        indent--;
         return null;
     }
 
@@ -849,45 +819,45 @@ public class ASTPrinter extends ASTBaseVisitor<Void> {
         if (!node.hasParentheses()) {
             attrs.append(", implicit=true");
         }
-        attrs.append(" ").append(formatLineNumber(node.getLine()));
-        printNode("TupleNode", attrs.toString());
-        increaseIndent();
+        // location handled below
+        printNode("TupleNode", node.getLine(), node.getColumn(), attrs.toString());
+        indent++;
         for (int i = 0; i < node.getElements().size(); i++) {
-            printNode("Element[" + i + "]:");
-            increaseIndent();
+            printLabel("Element[" + i + "]:");
+            indent++;
             node.getElements().get(i).accept(this);
-            decreaseIndent();
+            indent--;
         }
-        decreaseIndent();
+        indent--;
         return null;
     }
 
     @Override
     public Void visitFString(FStringNode node) {
-        printNode("FStringNode", formatLineNumber(node.getLine()));
-        increaseIndent();
-        printNode("Parts:");
-        increaseIndent();
+        printNode("FStringNode", node.getLine(), node.getColumn());
+        indent++;
+        printLabel("Parts:");
+        indent++;
         for (int i = 0; i < node.getParts().size(); i++) {
             FStringPart part = node.getParts().get(i);
-            printNode("Part[" + i + "]:");
-            increaseIndent();
+            printLabel("Part[" + i + "]:");
+            indent++;
             if (part instanceof FStringPart.StringPart) {
                 FStringPart.StringPart strPart = (FStringPart.StringPart) part;
-                printNode("Type: StringPart");
-                printNode("Value: \"" + strPart.getValue() + "\"");
+                printLabel("Type: StringPart");
+                printLabel("Value: \"" + strPart.getValue() + "\"");
             } else if (part instanceof FStringPart.ExpressionPart) {
                 FStringPart.ExpressionPart exprPart = (FStringPart.ExpressionPart) part;
-                printNode("Type: ExpressionPart");
-                printNode("Expression:");
-                increaseIndent();
+                printLabel("Type: ExpressionPart");
+                printLabel("Expression:");
+                indent++;
                 exprPart.getExpression().accept(this);
-                decreaseIndent();
+                indent--;
             }
-            decreaseIndent();
+            indent--;
         }
-        decreaseIndent();
-        decreaseIndent();
+        indent--;
+        indent--;
         return null;
     }
 }
