@@ -1,5 +1,7 @@
 package compilers.flask.semantic;
 
+import compilers.diagnostics.DiagnosticReporter;
+import compilers.diagnostics.Diagnostics;
 import compilers.flask.SymbolTable.SymbolEntry;
 import compilers.flask.SymbolTable.SymbolTable;
 import compilers.flask.Visitor.ASTBaseVisitor;
@@ -9,12 +11,12 @@ import compilers.flask.ast.nodes.statements.compound.ClassDefNode;
 import compilers.flask.ast.nodes.statements.ProgramNode;
 
 public class UndefinedVariableChecker extends ASTBaseVisitor<Void> {
-    private final ErrorReporter errorReporter;
+    private final DiagnosticReporter reporter;
     private final String sourceFile;
     private SymbolTable currentScope;
 
-    public UndefinedVariableChecker(SymbolTable symbolTable, ErrorReporter errorReporter, String sourceFile) {
-        this.errorReporter = errorReporter;
+    public UndefinedVariableChecker(SymbolTable symbolTable, DiagnosticReporter reporter, String sourceFile) {
+        this.reporter = reporter;
         this.sourceFile = sourceFile;
         this.currentScope = symbolTable;
     }
@@ -52,12 +54,11 @@ public class UndefinedVariableChecker extends ASTBaseVisitor<Void> {
     @Override
     public Void visitIdentifier(IdentifierNode node) {
         if (currentScope == null) return null;
-        
+
         String name = node.getName();
-        // Check if defined in any scope
         SymbolEntry entry = currentScope.lookup(name);
         if (entry == null) {
-            errorReporter.report(new UndefinedVariableError(name, node.getLine(), node.getColumn(), sourceFile));
+            reporter.report(Diagnostics.undefinedVariable(name, node.getLine(), node.getColumn(), sourceFile));
         }
         return null;
     }

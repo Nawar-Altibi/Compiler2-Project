@@ -1,28 +1,27 @@
 package compilers.flask.semantic;
 
+import compilers.diagnostics.DiagnosticReporter;
 import compilers.flask.SymbolTable.SymbolTable;
 import compilers.flask.ast.nodes.statements.ProgramNode;
-import java.util.List;
 
 public class SemanticAnalyzer {
-    private final ErrorReporter errorReporter;
+    private final DiagnosticReporter reporter;
     private final SymbolTable symbolTable;
     private final String sourceFile;
 
-    public SemanticAnalyzer(SymbolTable symbolTable, String sourceFile) {
+    public SemanticAnalyzer(SymbolTable symbolTable, String sourceFile, DiagnosticReporter reporter) {
         this.symbolTable = symbolTable;
-        this.errorReporter = new ErrorReporter();
         this.sourceFile = sourceFile;
+        this.reporter = reporter;
     }
 
     public void analyze(ProgramNode root) {
-        // Run individual checkers
-        new UndefinedVariableChecker(symbolTable, errorReporter, sourceFile).visitProgram(root);
-        new TypeChecker(symbolTable, errorReporter, sourceFile).visitProgram(root);
-        new FunctionCallChecker(symbolTable, errorReporter, sourceFile).visitProgram(root);
+        new UndefinedVariableChecker(symbolTable, reporter, sourceFile).visitProgram(root);
+        new TypeChecker(symbolTable, reporter, sourceFile).visitProgram(root);
+        new FunctionCallChecker(symbolTable, reporter, sourceFile).visitProgram(root);
     }
 
-    public ErrorReporter getErrorReporter() {
-        return errorReporter;
+    public DiagnosticReporter getReporter() {
+        return reporter;
     }
 }

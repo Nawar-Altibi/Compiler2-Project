@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<body>
+    {# Standalone HTML: UNDEFINED_JINJA_VARIABLE for vars not in {% for %} / {% set %} #}
+    <h1>{{ page_title }}</h1>
+
+    {% for item in items %}
+        <p>{{ item.name }} — {{ item.price }}</p>
+    {% endfor %}
+
+    {% set greeting = "Hello" %}
+    <p>{{ greeting }}, {{ visitor_name }}</p>
+
+    {% if show_footer %}
+        <footer>{{ footer_text }}</footer>
+    {% endif %}
+</body>
+</html>

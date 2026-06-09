@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ page_title }}</title> <!-- Error if page_title missing -->
+</head>
+<body>
+    <h1>Welcome, {{ user.username }}</h1> <!-- Error if user missing -->
+
+    {% for product in products %}
+        <div>
+            <h3>{{ product.name }}</h3>
+            <p>Price: {{ product.price * currency_rate }}</p> <!-- Error if currency_rate missing -->
+        </div>
+    {% endfor %}
+
+    {% if show_sidebar %}
+        <aside>
+            {{ sidebar_content }} <!-- Error if sidebar_content missing -->
+        </aside>
+    {% endif %}
+
+    <footer>
+        <p>&copy; {{ current_year }} {{ company_name }}</p> <!-- Error if company_name missing -->
+    </footer>
+</body>
+</html>

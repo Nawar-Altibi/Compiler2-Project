@@ -1,5 +1,7 @@
 package compilers.flask.semantic;
 
+import compilers.diagnostics.DiagnosticReporter;
+import compilers.diagnostics.Diagnostics;
 import compilers.flask.SymbolTable.SymbolEntry;
 import compilers.flask.SymbolTable.SymbolTable;
 import compilers.flask.SymbolTable.SymbolType;
@@ -14,14 +16,19 @@ import compilers.flask.ast.nodes.statements.compound.ClassDefNode;
 import compilers.flask.ast.nodes.statements.ProgramNode;
 
 public class TypeChecker extends ASTBaseVisitor<SymbolType> {
-    private final ErrorReporter errorReporter;
+    private final DiagnosticReporter reporter;
     private final String sourceFile;
     private SymbolTable currentScope;
 
-    public TypeChecker(SymbolTable symbolTable, ErrorReporter errorReporter, String sourceFile) {
-        this.errorReporter = errorReporter;
+    public TypeChecker(SymbolTable symbolTable, DiagnosticReporter reporter, String sourceFile) {
+        this.reporter = reporter;
         this.sourceFile = sourceFile;
         this.currentScope = symbolTable;
+    }
+
+    @Override
+    protected SymbolType defaultResult() {
+        return SymbolType.UNKNOWN;
     }
 
     @Override
@@ -57,13 +64,19 @@ public class TypeChecker extends ASTBaseVisitor<SymbolType> {
     @Override
     public SymbolType visitAssignment(AssignmentNode node) {
         SymbolType valueType = node.getValue().accept(this);
-        
+        if (valueType == null) valueType = SymbolType.UNKNOWN;
+
         if (node.getTarget() instanceof IdentifierNode && currentScope != null) {
             String name = ((IdentifierNode) node.getTarget()).getName();
             SymbolEntry entry = currentScope.lookup(name);
-            if (entry != null && entry.getType() != SymbolType.UNKNOWN && valueType != SymbolType.UNKNOWN) {
-                if (!isCompatible(entry.getType(), valueType)) {
-                    errorReporter.report(new TypeMismatchError(name, entry.getType().toString(), valueType.toString(), node.getLine(), node.getColumn(), sourceFile));
+            if (entry != null) {
+                SymbolType entryType = entry.getType();
+                if (entryType != null && entryType != SymbolType.UNKNOWN && valueType != SymbolType.UNKNOWN) {
+                    if (!isCompatible(entryType, valueType)) {
+                        reporter.report(Diagnostics.typeMismatch(
+                                name, entryType.toString(), valueType.toString(),
+                                node.getLine(), node.getColumn(), sourceFile));
+                    }
                 }
             }
         }
@@ -74,30 +87,32 @@ public class TypeChecker extends ASTBaseVisitor<SymbolType> {
     public SymbolType visitBinaryOp(BinaryOpNode node) {
         SymbolType leftType = node.getLeft().accept(this);
         SymbolType rightType = node.getRight().accept(this);
+        if (leftType == null) leftType = SymbolType.UNKNOWN;
+        if (rightType == null) rightType = SymbolType.UNKNOWN;
+
         String op = node.getOperator();
 
         if (leftType == SymbolType.UNKNOWN || rightType == SymbolType.UNKNOWN) {
             return SymbolType.UNKNOWN;
         }
 
-        // Basic arithmetic validation
         if (isArithmetic(op)) {
             if (!isNumeric(leftType) || !isNumeric(rightType)) {
-                // Special case: string concatenation or list addition
                 if (op.equals("+") && leftType == SymbolType.STRING && rightType == SymbolType.STRING) {
                     return SymbolType.STRING;
                 }
                 if (op.equals("+") && leftType == SymbolType.LIST && rightType == SymbolType.LIST) {
                     return SymbolType.LIST;
                 }
-                
-                errorReporter.report(new TypeError("Cannot apply operator '" + op + "' to " + leftType + " and " + rightType, node.getLine(), node.getColumn(), sourceFile));
+
+                reporter.report(Diagnostics.typeError(
+                        "Cannot apply operator '" + op + "' to " + leftType + " and " + rightType,
+                        node.getLine(), node.getColumn(), sourceFile));
                 return SymbolType.UNKNOWN;
             }
             return (leftType == SymbolType.FLOAT || rightType == SymbolType.FLOAT) ? SymbolType.FLOAT : SymbolType.INTEGER;
         }
 
-        // Logical operators
         if (isLogical(op)) {
             return SymbolType.BOOLEAN;
         }
@@ -107,9 +122,9 @@ public class TypeChecker extends ASTBaseVisitor<SymbolType> {
 
     @Override
     public SymbolType visitCompare(CompareNode node) {
-        SymbolType leftType = node.getLeft().accept(this);
+        node.getLeft().accept(this);
         for (Expression comp : node.getComparators()) {
-            SymbolType compType = comp.accept(this);
+            comp.accept(this);
         }
         return SymbolType.BOOLEAN;
     }
@@ -117,10 +132,14 @@ public class TypeChecker extends ASTBaseVisitor<SymbolType> {
     @Override
     public SymbolType visitUnaryOp(UnaryOpNode node) {
         SymbolType type = node.getOperand().accept(this);
+        if (type == null) type = SymbolType.UNKNOWN;
+
         String op = node.getOperator();
         if (op.equals("not")) return SymbolType.BOOLEAN;
-        if ((op.equals("+") || op.equals("-")) && !isNumeric(type)) {
-            errorReporter.report(new TypeError("Cannot apply unary operator '" + op + "' to " + type, node.getLine(), node.getColumn(), sourceFile));
+        if ((op.equals("+") || op.equals("-")) && type != SymbolType.UNKNOWN && !isNumeric(type)) {
+            reporter.report(Diagnostics.typeError(
+                    "Cannot apply unary operator '" + op + "' to " + type,
+                    node.getLine(), node.getColumn(), sourceFile));
         }
         return type;
     }
@@ -129,12 +148,16 @@ public class TypeChecker extends ASTBaseVisitor<SymbolType> {
     public SymbolType visitIdentifier(IdentifierNode node) {
         if (currentScope == null) return SymbolType.UNKNOWN;
         SymbolEntry entry = currentScope.lookup(node.getName());
-        return entry != null ? entry.getType() : SymbolType.UNKNOWN;
+        if (entry != null && entry.getType() != null) {
+            return entry.getType();
+        }
+        return SymbolType.UNKNOWN;
     }
 
     @Override
     public SymbolType visitLiteral(LiteralNode node) {
-        return SymbolType.fromLiteralType(node.getLiteralType());
+        SymbolType type = SymbolType.fromLiteralType(node.getLiteralType());
+        return type != null ? type : SymbolType.UNKNOWN;
     }
 
     @Override

@@ -1,5 +1,7 @@
 package compilers.flask.SymbolTable;
 
+import compilers.diagnostics.DiagnosticReporter;
+import compilers.diagnostics.Diagnostics;
 import compilers.flask.Visitor.ASTBaseVisitor;
 import compilers.flask.ast.nodes.*;
 import compilers.flask.ast.nodes.helpers.*;
@@ -22,19 +24,17 @@ import java.util.List;
  */
 public class SymbolTableBuilder extends ASTBaseVisitor<Void> {
     
-    private SymbolTable currentScope;           // الـ scope الحالي
-    private final List<String> errors;          // قائمة الأخطاء
-    private final List<String> warnings;        // قائمة التحذيرات
-    private final List<SymbolTable> allScopes;  // جميع الـ scopes (للطباعة)
+    private SymbolTable currentScope;
+    private final DiagnosticReporter reporter;
+    private final String sourceFile;
+    private final List<SymbolTable> allScopes;
 
-    public SymbolTableBuilder() {
-        this.currentScope = new SymbolTable(); // بدء بـ global scope
-        this.errors = new ArrayList<>();
-        this.warnings = new ArrayList<>();
+    public SymbolTableBuilder(DiagnosticReporter reporter, String sourceFile) {
+        this.reporter = reporter;
+        this.sourceFile = sourceFile;
+        this.currentScope = new SymbolTable();
         this.allScopes = new ArrayList<>();
-        this.allScopes.add(currentScope); // إضافة global scope
-        
-        // إضافة Python built-ins إلى global scope
+        this.allScopes.add(currentScope);
         initializeBuiltins();
     }
     
@@ -92,18 +92,6 @@ public class SymbolTableBuilder extends ASTBaseVisitor<Void> {
      */
     public List<SymbolTable> getAllScopes() {
         return new ArrayList<>(allScopes);
-    }
-
-    public List<String> getErrors() {
-        return new ArrayList<>(errors);
-    }
-
-    public List<String> getWarnings() {
-        return new ArrayList<>(warnings);
-    }
-
-    public boolean hasErrors() {
-        return !errors.isEmpty();
     }
 
     // ========================================
@@ -238,8 +226,7 @@ public class SymbolTableBuilder extends ASTBaseVisitor<Void> {
             functionEntry.setFunctionNode(node);
             functionEntry.setNode(node);
         } else {
-            // دالة موجودة مسبقاً
-            errors.add("Function '" + functionName + "' already defined at line " + node.getLine());
+            reporter.report(Diagnostics.duplicateSymbol("Function", functionName, node.getLine(), sourceFile));
         }
         
         // إنشاء scope جديد للدالة
@@ -287,7 +274,7 @@ public class SymbolTableBuilder extends ASTBaseVisitor<Void> {
             classEntry.setClassNode(node);
             classEntry.setNode(node);
         } else {
-            errors.add("Class '" + className + "' already defined at line " + node.getLine());
+            reporter.report(Diagnostics.duplicateSymbol("Class", className, node.getLine(), sourceFile));
         }
         
         // إنشاء scope جديد للكلاس
@@ -316,16 +303,11 @@ public class SymbolTableBuilder extends ASTBaseVisitor<Void> {
     public Void visitIdentifier(IdentifierNode node) {
         String name = node.getName();
         SymbolEntry entry = currentScope.lookup(name);
-        
-        if (entry == null) {
-            // متغير غير معرّف - لكن قد يكون built-in
-            if (!isBuiltin(name)) {
-                warnings.add("Variable '" + name + "' used but not defined at line " + node.getLine());
-            }
-        } else {
+
+        if (entry != null) {
             entry.setUsed(true);
         }
-        
+
         return null;
     }
 
@@ -337,22 +319,10 @@ public class SymbolTableBuilder extends ASTBaseVisitor<Void> {
             String funcName = ((IdentifierNode) function).getName();
             SymbolEntry entry = currentScope.lookup(funcName);
             
-            if (entry == null) {
-                // قد يكون built-in أو مستورد - لا نضيف warning
-                if (!isBuiltin(funcName)) {
-                    warnings.add("Function '" + funcName + "' called but not defined at line " + node.getLine());
-                }
-            } else {
-                // التحقق من النوع
-                if (entry.getKind() == SymbolEntry.SymbolKind.CLASS) {
-                    // Class constructor call (مثل Flask(), User()) - هذا صحيح
+            if (entry != null) {
+                if (entry.getKind() == SymbolEntry.SymbolKind.CLASS
+                        || entry.getKind() == SymbolEntry.SymbolKind.FUNCTION) {
                     entry.setUsed(true);
-                } else if (entry.getKind() == SymbolEntry.SymbolKind.FUNCTION) {
-                    entry.setUsed(true);
-                } else {
-                    // متغير عادي - قد يكون خطأ أو قد يكون callable
-                    // في Python، كل شيء callable تقريباً، لذا نعتبره warning فقط
-                    warnings.add("'" + funcName + "' is called but may not be callable at line " + node.getLine());
                 }
             }
         } else if (function instanceof AttributeAccessNode) {
@@ -365,14 +335,6 @@ public class SymbolTableBuilder extends ASTBaseVisitor<Void> {
         return null;
     }
     
-    /**
-     * التحقق إذا كان اسم built-in
-     */
-    private boolean isBuiltin(String name) {
-        return currentScope.getRootScope().lookupLocal(name) != null &&
-               currentScope.getRootScope().lookupLocal(name).hasAttribute("builtin");
-    }
-
     @Override
     public Void visitAttributeAccess(AttributeAccessNode node) {
         // زيارة object

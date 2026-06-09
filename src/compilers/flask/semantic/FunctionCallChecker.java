@@ -1,5 +1,7 @@
 package compilers.flask.semantic;
 
+import compilers.diagnostics.DiagnosticReporter;
+import compilers.diagnostics.Diagnostics;
 import compilers.flask.SymbolTable.SymbolEntry;
 import compilers.flask.SymbolTable.SymbolTable;
 import compilers.flask.Visitor.ASTBaseVisitor;
@@ -11,12 +13,12 @@ import compilers.flask.ast.nodes.statements.compound.ClassDefNode;
 import compilers.flask.ast.nodes.statements.ProgramNode;
 
 public class FunctionCallChecker extends ASTBaseVisitor<Void> {
-    private final ErrorReporter errorReporter;
+    private final DiagnosticReporter reporter;
     private final String sourceFile;
     private SymbolTable currentScope;
 
-    public FunctionCallChecker(SymbolTable symbolTable, ErrorReporter errorReporter, String sourceFile) {
-        this.errorReporter = errorReporter;
+    public FunctionCallChecker(SymbolTable symbolTable, DiagnosticReporter reporter, String sourceFile) {
+        this.reporter = reporter;
         this.sourceFile = sourceFile;
         this.currentScope = symbolTable;
     }
@@ -54,19 +56,21 @@ public class FunctionCallChecker extends ASTBaseVisitor<Void> {
     @Override
     public Void visitFunctionCall(FunctionCallNode node) {
         if (currentScope == null) return super.visitFunctionCall(node);
-        
+
         Expression funcExpr = node.getFunction();
         if (funcExpr instanceof IdentifierNode) {
             String funcName = ((IdentifierNode) funcExpr).getName();
             SymbolEntry entry = currentScope.lookup(funcName);
-            
+
             if (entry != null && entry.getFunctionNode() != null) {
                 FunctionDefNode def = entry.getFunctionNode();
                 int expected = def.getParameterCount();
                 int provided = node.getArgs().size() + node.getKwargs().size();
-                
+
                 if (expected != provided) {
-                    errorReporter.report(new FunctionCallError("Function '" + funcName + "' expects " + expected + " arguments but got " + provided, node.getLine(), node.getColumn(), sourceFile));
+                    reporter.report(Diagnostics.functionCallError(
+                            "Function '" + funcName + "' expects " + expected + " arguments but got " + provided,
+                            node.getLine(), node.getColumn(), sourceFile));
                 }
             }
         }

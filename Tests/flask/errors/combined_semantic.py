@@ -1,3 +1,6 @@
+# Semantic Errors: combined smoke test
+# UNDEFINED_VARIABLE, TYPE_ERROR, TYPE_MISMATCH, FUNCTION_CALL_ERROR
+
 # Undefined Variable Error
 print(a)
 
