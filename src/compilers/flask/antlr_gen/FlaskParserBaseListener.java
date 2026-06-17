@@ -1,5 +1,4 @@
-// Generated from C:/Users/Lenovo/Desktop/CompilerProject/src/main/antlr4/python/FlaskParser.g4 by ANTLR 4.13.1
-
+// Generated from /home/ghaith/IdeaProjects/Compiler2-Project/src/compilers/flask/antlr_gen/FlaskParser.g4 by ANTLR 4.13.1
 package compilers.flask.antlr_gen;
 
 
@@ -62,6 +61,18 @@ public class FlaskParserBaseListener implements FlaskParserListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitSmall_stmt(FlaskParser.Small_stmtContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterExprOrAssignment(FlaskParser.ExprOrAssignmentContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitExprOrAssignment(FlaskParser.ExprOrAssignmentContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -283,18 +294,6 @@ public class FlaskParserBaseListener implements FlaskParserListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterExpression_statement(FlaskParser.Expression_statementContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitExpression_statement(FlaskParser.Expression_statementContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterDecoratedDef(FlaskParser.DecoratedDefContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -379,6 +378,42 @@ public class FlaskParserBaseListener implements FlaskParserListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterAugmentedAssignmentOp(FlaskParser.AugmentedAssignmentOpContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitAugmentedAssignmentOp(FlaskParser.AugmentedAssignmentOpContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterTarget(FlaskParser.TargetContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitTarget(FlaskParser.TargetContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterTarget_trailer(FlaskParser.Target_trailerContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitTarget_trailer(FlaskParser.Target_trailerContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterImportStatement(FlaskParser.ImportStatementContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -434,54 +469,6 @@ public class FlaskParserBaseListener implements FlaskParserListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitDottedName(FlaskParser.DottedNameContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterAssignmentStatement(FlaskParser.AssignmentStatementContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitAssignmentStatement(FlaskParser.AssignmentStatementContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterTarget(FlaskParser.TargetContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitTarget(FlaskParser.TargetContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterTarget_trailer(FlaskParser.Target_trailerContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitTarget_trailer(FlaskParser.Target_trailerContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterAugmentedAssignmentOp(FlaskParser.AugmentedAssignmentOpContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitAugmentedAssignmentOp(FlaskParser.AugmentedAssignmentOpContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

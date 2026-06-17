@@ -1,5 +1,4 @@
-// Generated from C:/Users/Lenovo/Desktop/CompilerProject/src/main/antlr4/python/FlaskParser.g4 by ANTLR 4.13.1
-
+// Generated from /home/ghaith/IdeaProjects/Compiler2-Project/src/compilers/flask/antlr_gen/FlaskParser.g4 by ANTLR 4.13.1
 package compilers.flask.antlr_gen;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
@@ -49,6 +48,16 @@ public interface FlaskParserListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitSmall_stmt(FlaskParser.Small_stmtContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link FlaskParser#exprOrAssignment}.
+	 * @param ctx the parse tree
+	 */
+	void enterExprOrAssignment(FlaskParser.ExprOrAssignmentContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FlaskParser#exprOrAssignment}.
+	 * @param ctx the parse tree
+	 */
+	void exitExprOrAssignment(FlaskParser.ExprOrAssignmentContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link FlaskParser#returnStatement}.
 	 * @param ctx the parse tree
@@ -230,16 +239,6 @@ public interface FlaskParserListener extends ParseTreeListener {
 	 */
 	void exitClassStatement(FlaskParser.ClassStatementContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link FlaskParser#expression_statement}.
-	 * @param ctx the parse tree
-	 */
-	void enterExpression_statement(FlaskParser.Expression_statementContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link FlaskParser#expression_statement}.
-	 * @param ctx the parse tree
-	 */
-	void exitExpression_statement(FlaskParser.Expression_statementContext ctx);
-	/**
 	 * Enter a parse tree produced by {@link FlaskParser#decoratedDef}.
 	 * @param ctx the parse tree
 	 */
@@ -310,6 +309,36 @@ public interface FlaskParserListener extends ParseTreeListener {
 	 */
 	void exitBlock(FlaskParser.BlockContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link FlaskParser#augmentedAssignmentOp}.
+	 * @param ctx the parse tree
+	 */
+	void enterAugmentedAssignmentOp(FlaskParser.AugmentedAssignmentOpContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FlaskParser#augmentedAssignmentOp}.
+	 * @param ctx the parse tree
+	 */
+	void exitAugmentedAssignmentOp(FlaskParser.AugmentedAssignmentOpContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link FlaskParser#target}.
+	 * @param ctx the parse tree
+	 */
+	void enterTarget(FlaskParser.TargetContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FlaskParser#target}.
+	 * @param ctx the parse tree
+	 */
+	void exitTarget(FlaskParser.TargetContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link FlaskParser#target_trailer}.
+	 * @param ctx the parse tree
+	 */
+	void enterTarget_trailer(FlaskParser.Target_trailerContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FlaskParser#target_trailer}.
+	 * @param ctx the parse tree
+	 */
+	void exitTarget_trailer(FlaskParser.Target_trailerContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link FlaskParser#importStatement}.
 	 * @param ctx the parse tree
 	 */
@@ -359,46 +388,6 @@ public interface FlaskParserListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitDottedName(FlaskParser.DottedNameContext ctx);
-	/**
-	 * Enter a parse tree produced by {@link FlaskParser#assignmentStatement}.
-	 * @param ctx the parse tree
-	 */
-	void enterAssignmentStatement(FlaskParser.AssignmentStatementContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link FlaskParser#assignmentStatement}.
-	 * @param ctx the parse tree
-	 */
-	void exitAssignmentStatement(FlaskParser.AssignmentStatementContext ctx);
-	/**
-	 * Enter a parse tree produced by {@link FlaskParser#target}.
-	 * @param ctx the parse tree
-	 */
-	void enterTarget(FlaskParser.TargetContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link FlaskParser#target}.
-	 * @param ctx the parse tree
-	 */
-	void exitTarget(FlaskParser.TargetContext ctx);
-	/**
-	 * Enter a parse tree produced by {@link FlaskParser#target_trailer}.
-	 * @param ctx the parse tree
-	 */
-	void enterTarget_trailer(FlaskParser.Target_trailerContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link FlaskParser#target_trailer}.
-	 * @param ctx the parse tree
-	 */
-	void exitTarget_trailer(FlaskParser.Target_trailerContext ctx);
-	/**
-	 * Enter a parse tree produced by {@link FlaskParser#augmentedAssignmentOp}.
-	 * @param ctx the parse tree
-	 */
-	void enterAugmentedAssignmentOp(FlaskParser.AugmentedAssignmentOpContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link FlaskParser#augmentedAssignmentOp}.
-	 * @param ctx the parse tree
-	 */
-	void exitAugmentedAssignmentOp(FlaskParser.AugmentedAssignmentOpContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link FlaskParser#expression}.
 	 * @param ctx the parse tree

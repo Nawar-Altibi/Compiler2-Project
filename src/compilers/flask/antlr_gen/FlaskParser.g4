@@ -1,9 +1,5 @@
 parser grammar FlaskParser;
 
-@header {
-package compilers.FlaskParser.g4.antlr_gen;
-}
-
 options {
     tokenVocab = FlaskLexer;
 }
@@ -21,10 +17,11 @@ simple_statement
     : small_stmt NEWLINE
     ;
 
+// ✅ FIX: استبدلنا assignmentStatement و expression_statement بـ exprOrAssignment
+//    لحل الـ ambiguity — كلاهما كان يبدأ بـ IDENTIFIER
 small_stmt
     : importStatement
-    | assignmentStatement
-    | expression_statement
+    | exprOrAssignment
     | returnStatement
     | passStatement
     | breakStatement
@@ -33,6 +30,17 @@ small_stmt
     | assertStatement
     | globalStatement
     | raiseStatement
+    ;
+
+// ✅ FIX: قاعدة موحدة — ابدأ بـ expression دائماً، وبعدين شوف إذا في = أو لأ
+//    foo()          → expression فقط
+//    x = 5          → simple assignment
+//    x += 1         → augmented assignment
+//    app.config['KEY'] = 'val' → subscript assignment
+exprOrAssignment
+    : expression ASSIGN expression
+    | expression augmentedAssignmentOp expression
+    | expression
     ;
 
 returnStatement
@@ -121,10 +129,6 @@ classStatement
     : CLASS IDENTIFIER (LPAREN expression_list? RPAREN)? COLON suite
     ;
 
-expression_statement
-    : expression
-    ;
-
 decoratedDef
     : decorator+ functionDef
     ;
@@ -134,7 +138,7 @@ decorator
     ;
 
 functionDef
-    : DEF IDENTIFIER LPAREN parameters? RPAREN COLON suite  // ← استخدم suite
+    : DEF IDENTIFIER LPAREN parameters? RPAREN COLON suite
     ;
 
 parameters
@@ -146,12 +150,25 @@ parameter
     ;
 
 suite
-    : simple_statement                    // ← one-liner: def foo(): return 5
-    | NEWLINE INDENT statement+ DEDENT    // ← block
+    : simple_statement
+    | NEWLINE INDENT statement+ DEDENT
     ;
 
 block
-    : suite  // ← استخدم suite بدلاً من تعريف مباشر
+    : suite
+    ;
+
+augmentedAssignmentOp
+    : ADD_ASSIGN | SUB_ASSIGN | MUL_ASSIGN | DIV_ASSIGN
+    ;
+
+target
+    : IDENTIFIER (target_trailer)*
+    ;
+
+target_trailer
+    : DOT IDENTIFIER
+    | LBRACK expression RBRACK
     ;
 
 importStatement
@@ -173,23 +190,6 @@ importList
 
 dottedName
     : IDENTIFIER (DOT IDENTIFIER)*
-    ;
-
-assignmentStatement
-    : target (ASSIGN | augmentedAssignmentOp) expression
-    ;
-
-target
-    : IDENTIFIER (target_trailer)*
-    ;
-
-target_trailer
-    : DOT IDENTIFIER
-    | LBRACK expression RBRACK
-    ;
-
-augmentedAssignmentOp
-    : ADD_ASSIGN | SUB_ASSIGN | MUL_ASSIGN | DIV_ASSIGN
     ;
 
 expression
@@ -281,5 +281,3 @@ argument
     : expression
     | IDENTIFIER ASSIGN expression
     ;
-
-

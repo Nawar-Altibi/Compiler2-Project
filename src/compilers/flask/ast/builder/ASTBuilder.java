@@ -78,10 +78,8 @@ public class ASTBuilder extends FlaskParserBaseVisitor<ASTNode> {
         // Delegate to the specific statement type
         if (ctx.importStatement() != null) {
             return visit(ctx.importStatement());
-        } else if (ctx.assignmentStatement() != null) {
-            return visit(ctx.assignmentStatement());
-        } else if (ctx.expression_statement() != null) {
-            return visit(ctx.expression_statement());
+        } else if (ctx.exprOrAssignment() != null) {
+            return visit(ctx.exprOrAssignment());
         } else if (ctx.returnStatement() != null) {
             return visit(ctx.returnStatement());
         } else if (ctx.passStatement() != null) {
@@ -107,30 +105,28 @@ public class ASTBuilder extends FlaskParserBaseVisitor<ASTNode> {
     // ========================================
 
     @Override
-    public ASTNode visitAssignmentStatement(FlaskParser.AssignmentStatementContext ctx) {
-        Expression target = (Expression) visit(ctx.target());
-        Expression value = (Expression) visit(ctx.expression());
-        String operator = ctx.ASSIGN() != null ? "=" : ctx.augmentedAssignmentOp().getText();
+    public ASTNode visitExprOrAssignment(FlaskParser.ExprOrAssignmentContext ctx) {
+        Expression firstExpression = (Expression) visit(ctx.expression(0));
 
-        // Check for null values
-        if (target == null) {
-            throw new IllegalStateException("Assignment target cannot be null at line " +
-                    (ctx.getStart() != null ? ctx.getStart().getLine() : "unknown"));
+        if (ctx.ASSIGN() != null || ctx.augmentedAssignmentOp() != null) {
+            Expression value = (Expression) visit(ctx.expression(1));
+            String operator = ctx.ASSIGN() != null ? "=" : ctx.augmentedAssignmentOp().getText();
+
+            if (firstExpression == null) {
+                throw new IllegalStateException("Assignment target cannot be null at line " +
+                        (ctx.getStart() != null ? ctx.getStart().getLine() : "unknown"));
+            }
+            if (value == null) {
+                throw new IllegalStateException("Assignment value cannot be null at line " +
+                        (ctx.getStart() != null ? ctx.getStart().getLine() : "unknown"));
+            }
+
+            AssignmentNode node = new AssignmentNode(firstExpression, operator, value);
+            setLocation(node, ctx);
+            return node;
         }
-        if (value == null) {
-            throw new IllegalStateException("Assignment value cannot be null at line " +
-                    (ctx.getStart() != null ? ctx.getStart().getLine() : "unknown"));
-        }
 
-        AssignmentNode node = new AssignmentNode(target, operator, value);
-        setLocation(node, ctx);
-        return node;
-    }
-
-    @Override
-    public ASTNode visitExpression_statement(FlaskParser.Expression_statementContext ctx) {
-        Expression expr = (Expression) visit(ctx.expression());
-        ExpressionStatementNode node = new ExpressionStatementNode(expr);
+        ExpressionStatementNode node = new ExpressionStatementNode(firstExpression);
         setLocation(node, ctx);
         return node;
     }

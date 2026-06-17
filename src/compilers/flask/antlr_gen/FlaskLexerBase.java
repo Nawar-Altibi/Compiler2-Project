@@ -12,6 +12,8 @@ public abstract class FlaskLexerBase extends Lexer {
     private int opened = 0;
     private Token lastToken = null;
     private boolean expectIndent = false;  // ← NEW: تتبع إذا كنا نتوقع INDENT
+    private boolean eofEmitted = false;
+
 
     protected FlaskLexerBase(CharStream input) {
         super(input);
@@ -36,34 +38,86 @@ public abstract class FlaskLexerBase extends Lexer {
         }
     }
 
+
+//    @Override
+//    public Token nextToken() {
+//        // تحقق إذا وصلنا لنهاية الملف
+//        if (_input.LA(1) == EOF) {
+//
+//            // 1. نظف أي EOF قديم موجود في القائمة
+//            for (int i = tokens.size() - 1; i >= 0; i--) {
+//                if (tokens.get(i).getType() == EOF) {
+//                    tokens.remove(i);
+//                }
+//            }
+//
+//            // 2. ✅ التعديل السحري: أضف NEWLINE فقط إذا كان آخر Token ليس NEWLINE
+//            // هذا يضمن أن أي جملة في نهاية الملف ستُغلق بشكل صحيح دون إضافة NEWLINE مزدوج
+//            if (this.lastToken == null || this.lastToken.getType() != FlaskLexer.NEWLINE) {
+//                this.emit(createToken(FlaskLexer.NEWLINE, "\n"));
+//            }
+//
+//            // 3. أغلق أي كتل مفتوحة (DEDENTs) - نفس كودك القديم ولكن بدون شرط indents > 1 في الخارج
+//            while (indents.size() > 1) {
+//                this.emit(createDedent());
+//                indents.pop();
+//            }
+//
+//            // 4. أضف الـ EOF النهائي
+//            this.emit(createToken(FlaskLexer.EOF, "<EOF>"));
+//        }
+//
+//        // باقي الكود كما هو تماماً
+//        Token next = super.nextToken();
+//
+//        if (next.getChannel() == Token.DEFAULT_CHANNEL) {
+//            this.lastToken = next;
+//        }
+//
+//        return tokens.isEmpty() ? next : tokens.poll();
+//    }
+
+
     @Override
     public Token nextToken() {
-        // Handle EOF with pending DEDENTs
-        if (_input.LA(1) == EOF && indents.size() > 1) {
+        // Handle EOF: نضيف NEWLINE و DEDENTs مرة واحدة فقط
+        if (_input.LA(1) == EOF && !eofEmitted) {
+
+            // ✅ أغلق الباب، لا تدخل هنا مرة أخرى أبداً
+            eofEmitted = true;
+
+            // نظف أي EOF قديم
             for (int i = tokens.size() - 1; i >= 0; i--) {
                 if (tokens.get(i).getType() == EOF) {
                     tokens.remove(i);
                 }
             }
 
-            this.emit(createToken(FlaskLexer.NEWLINE, "\n"));
+            // أضف NEWLINE إذا كان آخر Token ليس NEWLINE
+            if (this.lastToken == null || this.lastToken.getType() != FlaskLexer.NEWLINE) {
+                this.emit(createToken(FlaskLexer.NEWLINE, "\n"));
+            }
 
+            // أغلق الكتل المفتوحة (DEDENTs)
             while (indents.size() > 1) {
                 this.emit(createDedent());
                 indents.pop();
             }
 
+            // أضف الـ EOF النهائي
             this.emit(createToken(FlaskLexer.EOF, "<EOF>"));
         }
 
         Token next = super.nextToken();
 
-        if (next.getChannel() == Token.DEFAULT_CHANNEL) {
+        // تحديث lastToken (تأكدنا أيضاً ألا يكون EOF)
+        if (next.getChannel() == Token.DEFAULT_CHANNEL && next.getType() != EOF) {
             this.lastToken = next;
         }
 
         return tokens.isEmpty() ? next : tokens.poll();
     }
+
 
     private Token createDedent() {
         CommonToken dedent = createToken(FlaskLexer.DEDENT, "");
@@ -199,6 +253,7 @@ public abstract class FlaskLexerBase extends Lexer {
         opened = 0;
         lastToken = null;
         expectIndent = false;  // ← NEW: Reset
+        eofEmitted = false;
         super.reset();
     }
 }

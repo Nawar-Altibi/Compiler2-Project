@@ -1,5 +1,4 @@
-// Generated from C:/Users/Lenovo/Desktop/CompilerProject/src/main/antlr4/python/FlaskParser.g4 by ANTLR 4.13.1
-
+// Generated from /home/ghaith/IdeaProjects/Compiler2-Project/src/compilers/flask/antlr_gen/FlaskParser.g4 by ANTLR 4.13.1
 package compilers.flask.antlr_gen;
 
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
@@ -36,6 +35,12 @@ public interface FlaskParserVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitSmall_stmt(FlaskParser.Small_stmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link FlaskParser#exprOrAssignment}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExprOrAssignment(FlaskParser.ExprOrAssignmentContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link FlaskParser#returnStatement}.
 	 * @param ctx the parse tree
@@ -145,12 +150,6 @@ public interface FlaskParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitClassStatement(FlaskParser.ClassStatementContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link FlaskParser#expression_statement}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitExpression_statement(FlaskParser.Expression_statementContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link FlaskParser#decoratedDef}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -193,6 +192,24 @@ public interface FlaskParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitBlock(FlaskParser.BlockContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link FlaskParser#augmentedAssignmentOp}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitAugmentedAssignmentOp(FlaskParser.AugmentedAssignmentOpContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link FlaskParser#target}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTarget(FlaskParser.TargetContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link FlaskParser#target_trailer}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTarget_trailer(FlaskParser.Target_trailerContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link FlaskParser#importStatement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -222,30 +239,6 @@ public interface FlaskParserVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitDottedName(FlaskParser.DottedNameContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link FlaskParser#assignmentStatement}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitAssignmentStatement(FlaskParser.AssignmentStatementContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link FlaskParser#target}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitTarget(FlaskParser.TargetContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link FlaskParser#target_trailer}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitTarget_trailer(FlaskParser.Target_trailerContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link FlaskParser#augmentedAssignmentOp}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitAugmentedAssignmentOp(FlaskParser.AugmentedAssignmentOpContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link FlaskParser#expression}.
 	 * @param ctx the parse tree

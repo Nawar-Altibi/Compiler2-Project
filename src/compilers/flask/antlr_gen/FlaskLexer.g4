@@ -1,14 +1,10 @@
 lexer grammar FlaskLexer;
 
-@header {
-package compilers.FlaskLexer.g4.antlr_gen;
-}
-
 // Tokens for indentation (must be declared)
 tokens { INDENT, DEDENT }
 
 // Options: We put the complex Java logic in a separate base class for cleanliness.
-options { superClass=compiler.python.FlaskLexerBase; }
+options { superClass=FlaskLexerBase; }
 
 // --- Keywords (مبسطة لـ Flask basics فقط) ---
 AND      : 'and' ;
@@ -141,4 +137,3 @@ fragment LINE_JOINING
  ;
 
 UNKNOWN_CHAR : . ;
-

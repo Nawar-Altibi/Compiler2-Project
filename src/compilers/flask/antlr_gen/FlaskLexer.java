@@ -1,5 +1,3 @@
-// Generated from C:/Users/Lenovo/Desktop/CompilerProject/src/main/antlr4/python/FlaskLexer.g4 by ANTLR 4.13.1
-
 package compilers.flask.antlr_gen;
 
 import org.antlr.v4.runtime.Lexer;
