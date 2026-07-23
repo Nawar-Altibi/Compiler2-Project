@@ -5,6 +5,7 @@ import compilers.flask.ast.nodes.*;
 import compilers.flask.ast.nodes.helpers.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class FStringNode extends Expression {
@@ -12,7 +13,7 @@ public class FStringNode extends Expression {
     private final List<FStringPart> parts;
 
     public FStringNode(List<FStringPart> parts) {
-        this.parts = parts != null ? parts : new ArrayList<>();
+        this.parts = parts != null ? new ArrayList<>(parts) : new ArrayList<>();
         // Set parent for all expression parts
         for (FStringPart part : this.parts) {
             if (part instanceof FStringPart.ExpressionPart) {
@@ -29,7 +30,7 @@ public class FStringNode extends Expression {
     }
 
     public List<FStringPart> getParts() {
-        return parts;
+        return Collections.unmodifiableList(parts);
     }
 
     public boolean isEmpty() {
@@ -63,5 +64,4 @@ public class FStringNode extends Expression {
         return sb.toString();
     }
 }
-
 

@@ -3,6 +3,8 @@ import compilers.flask.Visitor.ASTVisitor;
 import compilers.flask.ast.nodes.*;
 import compilers.flask.ast.nodes.helpers.*;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class WhileStatementNode extends Statement {
@@ -14,16 +16,18 @@ public class WhileStatementNode extends Statement {
     public WhileStatementNode(Expression condition, List<Statement> body,
                               List<Statement> elseBody) {
         this.condition = condition;
-        this.body = body;
-        this.elseBody = elseBody;
+        this.body = Collections.unmodifiableList(new ArrayList<>(body));
+        this.elseBody = elseBody == null
+                ? null
+                : Collections.unmodifiableList(new ArrayList<>(elseBody));
 
         // Set parents
         condition.setParent(this);
-        for (Statement stmt : body) {
+        for (Statement stmt : this.body) {
             stmt.setParent(this);
         }
-        if (elseBody != null) {
-            for (Statement stmt : elseBody) {
+        if (this.elseBody != null) {
+            for (Statement stmt : this.elseBody) {
                 stmt.setParent(this);
             }
         }
@@ -67,4 +71,3 @@ public class WhileStatementNode extends Statement {
         return "While" + (hasElse() ? " (with else)" : "");
     }
 }
-

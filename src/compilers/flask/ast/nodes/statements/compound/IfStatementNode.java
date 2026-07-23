@@ -4,6 +4,7 @@ import compilers.flask.ast.nodes.*;
 import compilers.flask.ast.nodes.helpers.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class IfStatementNode extends Statement {
@@ -14,10 +15,17 @@ public class IfStatementNode extends Statement {
     public static class ElifClause {
         private final Expression condition;
         private final List<Statement> body;
+        private final SourceSpan span;
 
         public ElifClause(Expression condition, List<Statement> body) {
+            this(condition, body, SourceSpan.UNKNOWN);
+        }
+
+        public ElifClause(
+                Expression condition, List<Statement> body, SourceSpan span) {
             this.condition = condition;
-            this.body = body;
+            this.body = Collections.unmodifiableList(new ArrayList<>(body));
+            this.span = span == null ? SourceSpan.UNKNOWN : span;
         }
 
         public Expression getCondition() {
@@ -26,6 +34,10 @@ public class IfStatementNode extends Statement {
 
         public List<Statement> getBody() {
             return body;
+        }
+
+        public SourceSpan getSpan() {
+            return span;
         }
 
         @Override
@@ -42,13 +54,17 @@ public class IfStatementNode extends Statement {
     public IfStatementNode(Expression condition, List<Statement> thenBody,
                            List<ElifClause> elifClauses, List<Statement> elseBody) {
         this.condition = condition;
-        this.thenBody = thenBody;
-        this.elifClauses = elifClauses != null ? elifClauses : new ArrayList<>();
-        this.elseBody = elseBody;
+        this.thenBody = Collections.unmodifiableList(new ArrayList<>(thenBody));
+        this.elifClauses = Collections.unmodifiableList(elifClauses != null
+                ? new ArrayList<>(elifClauses)
+                : new ArrayList<ElifClause>());
+        this.elseBody = elseBody == null
+                ? null
+                : Collections.unmodifiableList(new ArrayList<>(elseBody));
 
         // Set parents
         condition.setParent(this);
-        for (Statement stmt : thenBody) {
+        for (Statement stmt : this.thenBody) {
             stmt.setParent(this);
         }
         for (ElifClause elifClause : this.elifClauses) {
@@ -57,8 +73,8 @@ public class IfStatementNode extends Statement {
                 stmt.setParent(this);
             }
         }
-        if (elseBody != null) {
-            for (Statement stmt : elseBody) {
+        if (this.elseBody != null) {
+            for (Statement stmt : this.elseBody) {
                 stmt.setParent(this);
             }
         }
@@ -117,4 +133,3 @@ public class IfStatementNode extends Statement {
         return sb.toString();
     }
 }
-

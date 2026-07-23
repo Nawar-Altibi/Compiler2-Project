@@ -3,17 +3,29 @@ import compilers.html_css.ast.StyleNode;
 
 import compilers.html_css.ast.*;
 
+import java.io.PrintStream;
+import java.util.Objects;
+
 public class AstPrintVisitor implements HtmlVisitor {
 
+    private final PrintStream out;
     private int indent = 0;
 
+    public AstPrintVisitor() {
+        this(System.out);
+    }
+
+    public AstPrintVisitor(PrintStream out) {
+        this.out = Objects.requireNonNull(out, "out");
+    }
+
     private void ind() {
-        System.out.print("  ".repeat(Math.max(0, indent)));
+        out.print("  ".repeat(Math.max(0, indent)));
     }
 
     private void printNode(HtmlNode n, String extra) {
         ind();
-        System.out.println(n.getNodeName() + " (line=" + n.getLine() + ", col=" + n.getColumn() + ") " + extra);
+        out.println(n.getNodeName() + " (line=" + n.getLine() + ", col=" + n.getColumn() + ") " + extra);
     }
 
     @Override
@@ -31,7 +43,7 @@ public class AstPrintVisitor implements HtmlVisitor {
 
         if (!node.getAttributes().isEmpty()) {
             ind();
-            System.out.println("Attributes:");
+            out.println("Attributes:");
             indent++;
             for (AttributeNode a : node.getAttributes()) a.accept(this);
             indent--;
@@ -80,20 +92,20 @@ public class AstPrintVisitor implements HtmlVisitor {
         indent++;
 
         ind();
-        System.out.println("css=\"" + shortCss(node.getRawCss()) + "\"");
+        out.println("css=\"" + shortCss(node.getRawCss()) + "\"");
 
         if (node.getCssAst() != null) {
             ind();
-            System.out.println("CSS AST:");
+            out.println("CSS AST:");
             indent++;
 
-            CssPrintVisitor cssPrinter = new CssPrintVisitor();
+            CssPrintVisitor cssPrinter = new CssPrintVisitor(out);
             node.getCssAst().accept(cssPrinter);
 
             indent--;
         } else {
             ind();
-            System.out.println("CSS AST: <null>");
+            out.println("CSS AST: <null>");
         }
 
         indent--;
@@ -105,7 +117,6 @@ public class AstPrintVisitor implements HtmlVisitor {
         return (s.length() > 120) ? s.substring(0, 120) + "..." : s;
     }
 }
-
 
 
 

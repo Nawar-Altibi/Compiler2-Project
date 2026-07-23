@@ -146,14 +146,8 @@ public abstract class ASTBaseVisitor<T> implements ASTVisitor<T> {
     @Override
     public T visitFunctionDef(FunctionDefNode node) {
         // Visit decorators
-        for (Decorator decorator : node.getDecorators()) {
-            decorator.getName().accept(this);
-            for (Expression arg : decorator.getArgs()) {
-                arg.accept(this);
-            }
-            for (Expression kwarg : decorator.getKwargs().values()) {
-                kwarg.accept(this);
-            }
+        for (DecoratorNode decorator : node.getDecorators()) {
+            decorator.getExpression().accept(this);
         }
 
         // Visit parameters (default values)
@@ -323,14 +317,8 @@ public abstract class ASTBaseVisitor<T> implements ASTVisitor<T> {
     @Override
     public T visitClassDef(ClassDefNode node) {
         // Visit decorators
-        for (Decorator decorator : node.getDecorators()) {
-            decorator.getName().accept(this);
-            for (Expression arg : decorator.getArgs()) {
-                arg.accept(this);
-            }
-            for (Expression kwarg : decorator.getKwargs().values()) {
-                kwarg.accept(this);
-            }
+        for (DecoratorNode decorator : node.getDecorators()) {
+            decorator.getExpression().accept(this);
         }
 
         // Visit base classes
@@ -451,14 +439,8 @@ public abstract class ASTBaseVisitor<T> implements ASTVisitor<T> {
     public T visitFunctionCall(FunctionCallNode node) {
         node.getFunction().accept(this);
 
-        // Visit positional arguments
-        for (Expression arg : node.getArgs()) {
-            arg.accept(this);
-        }
-
-        // Visit keyword arguments
-        for (Expression kwarg : node.getKwargs().values()) {
-            kwarg.accept(this);
+        for (CallArgument argument : node.getArguments()) {
+            argument.getValue().accept(this);
         }
 
         return defaultResult();

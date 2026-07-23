@@ -4,6 +4,7 @@ import compilers.flask.ast.nodes.*;
 import compilers.flask.ast.nodes.helpers.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class ListNode extends Expression {
@@ -11,9 +12,9 @@ public class ListNode extends Expression {
     private final List<Expression> elements;
 
     public ListNode(List<Expression> elements) {
-        this.elements = elements;
+        this.elements = new ArrayList<>(elements);
         // Set parent for all elements
-        for (Expression elem : elements) {
+        for (Expression elem : this.elements) {
             elem.setParent(this);
         }
     }
@@ -24,7 +25,7 @@ public class ListNode extends Expression {
     }
 
     public List<Expression> getElements() {
-        return elements;
+        return Collections.unmodifiableList(elements);
     }
 
     // Helper methods
@@ -56,4 +57,3 @@ public class ListNode extends Expression {
         return "List(" + elements.size() + " elements)";
     }
 }
-

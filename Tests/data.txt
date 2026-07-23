@@ -1,0 +1,2 @@
+Compiler VM filesystem capability works.
+This text was read through a rooted, read-only host capability.

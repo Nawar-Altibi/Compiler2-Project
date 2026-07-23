@@ -3,6 +3,8 @@ import compilers.flask.Visitor.ASTVisitor;
 import compilers.flask.ast.nodes.*;
 import compilers.flask.ast.nodes.helpers.*;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class SetNode extends Expression {
@@ -10,15 +12,15 @@ public class SetNode extends Expression {
     private final List<Expression> elements;
 
     public SetNode(List<Expression> elements) {
-        this.elements = elements;
+        this.elements = new ArrayList<>(elements);
         // Set parent for all elements
-        for (Expression elem : elements) {
+        for (Expression elem : this.elements) {
             elem.setParent(this);
         }
     }
 
     public List<Expression> getElements() {
-        return elements;
+        return Collections.unmodifiableList(elements);
     }
 
     // Helper methods
@@ -50,4 +52,3 @@ public class SetNode extends Expression {
         return "Set(" + elements.size() + " elements)";
     }
 }
-

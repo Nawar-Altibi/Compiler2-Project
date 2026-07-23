@@ -1,6 +1,5 @@
-// Generated from /home/ghaith/IdeaProjects/Compiler2-Project/src/compilers/flask/antlr_gen/FlaskParser.g4 by ANTLR 4.13.1
+// Generated from FlaskParser.g4 by ANTLR 4.13.1
 package compilers.flask.antlr_gen;
-
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
@@ -462,6 +461,18 @@ public class FlaskParserBaseListener implements FlaskParserListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterImportItem(FlaskParser.ImportItemContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitImportItem(FlaskParser.ImportItemContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterDottedName(FlaskParser.DottedNameContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -613,6 +624,18 @@ public class FlaskParserBaseListener implements FlaskParserListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitAtom(FlaskParser.AtomContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterParenthesized(FlaskParser.ParenthesizedContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitParenthesized(FlaskParser.ParenthesizedContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

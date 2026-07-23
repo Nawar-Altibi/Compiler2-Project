@@ -12,8 +12,8 @@ public class DelNode extends Statement {
     private final List<Expression> targets;
 
     public DelNode(List<Expression> targets) {
-        this.targets = targets;
-        for (Expression target : targets) {
+        this.targets = Collections.unmodifiableList(new ArrayList<>(targets));
+        for (Expression target : this.targets) {
             target.setParent(this);
         }
     }
@@ -41,4 +41,3 @@ public class DelNode extends Statement {
         return "Del(" + targets.size() + " targets)";
     }
 }
-

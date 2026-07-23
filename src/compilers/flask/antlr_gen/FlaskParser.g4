@@ -130,23 +130,23 @@ classStatement
     ;
 
 decoratedDef
-    : decorator+ functionDef
+    : decorator+ (functionDef | classStatement)
     ;
 
 decorator
-    : AT dottedName (LPAREN arglist? RPAREN)? NEWLINE
+    : AT expression NEWLINE
     ;
 
 functionDef
-    : DEF IDENTIFIER LPAREN parameters? RPAREN COLON suite
+    : DEF IDENTIFIER LPAREN parameters? RPAREN (ARROW expression)? COLON suite
     ;
 
 parameters
-    : parameter (COMMA parameter)*
+    : parameter (COMMA parameter)* COMMA?
     ;
 
 parameter
-    : IDENTIFIER (ASSIGN expression)?
+    : IDENTIFIER (COLON expression)? (ASSIGN expression)?
     ;
 
 suite
@@ -185,7 +185,11 @@ importFromStatement
     ;
 
 importList
-    : IDENTIFIER (COMMA IDENTIFIER)*
+    : importItem (COMMA importItem)* COMMA?
+    ;
+
+importItem
+    : IDENTIFIER (AS IDENTIFIER)?
     ;
 
 dottedName
@@ -222,7 +226,7 @@ additive_expression
     ;
 
 multiplicative_expression
-    : unary_expression ((MUL | DIV | MOD) unary_expression)*
+    : unary_expression ((MUL | DIV | FLOOR_DIV | MOD) unary_expression)*
     ;
 
 unary_expression
@@ -245,9 +249,16 @@ atom
     | TRUE
     | FALSE
     | NONE
-    | LPAREN expression RPAREN
+    | parenthesized
     | LBRACK expression_list? RBRACK
     | LBRACE NEWLINE? dict_or_set? NEWLINE? RBRACE
+    ;
+
+// Parentheses are grouping only when no comma is present.  Empty and
+// comma-bearing forms are tuple displays, including the singleton `(x,)`.
+parenthesized
+    : LPAREN RPAREN
+    | LPAREN expression (COMMA expression)* COMMA? RPAREN
     ;
 
 trailer
@@ -262,7 +273,7 @@ dict_or_set
     ;
 
 dict_items
-    : dict_item (COMMA NEWLINE? dict_item)*
+    : dict_item (COMMA NEWLINE? dict_item)* COMMA?
     ;
 
 dict_item
@@ -270,11 +281,11 @@ dict_item
     ;
 
 expression_list
-    : expression (COMMA expression)*
+    : expression (COMMA expression)* COMMA?
     ;
 
 arglist
-    : argument (COMMA argument)*
+    : argument (COMMA argument)* COMMA?
     ;
 
 argument

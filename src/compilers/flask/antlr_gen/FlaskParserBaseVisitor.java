@@ -1,6 +1,5 @@
-// Generated from /home/ghaith/IdeaProjects/Compiler2-Project/src/compilers/flask/antlr_gen/FlaskParser.g4 by ANTLR 4.13.1
+// Generated from FlaskParser.g4 by ANTLR 4.13.1
 package compilers.flask.antlr_gen;
-
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
@@ -278,6 +277,13 @@ public class FlaskParserBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
+	@Override public T visitImportItem(FlaskParser.ImportItemContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
 	@Override public T visitDottedName(FlaskParser.DottedNameContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
@@ -363,6 +369,13 @@ public class FlaskParserBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
 	@Override public T visitAtom(FlaskParser.AtomContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitParenthesized(FlaskParser.ParenthesizedContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

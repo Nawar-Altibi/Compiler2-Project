@@ -1,8 +1,11 @@
 package compilers.flask.ast.nodes.helpers;
 
 import compilers.flask.ast.nodes.Expression;
+import compilers.flask.ast.nodes.SourceSpan;
 import compilers.flask.ast.nodes.Statement;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class ExceptClause {
@@ -10,12 +13,25 @@ public class ExceptClause {
     private final Expression exceptionType;  // Exception type (null for bare except)
     private final String asName;             // Variable name (null if not present)
     private final List<Statement> body;      // Handler body
+    private final SourceSpan span;
+    private final SourceSpan aliasSpan;
 
     // Constructor with all fields
     public ExceptClause(Expression exceptionType, String asName, List<Statement> body) {
+        this(exceptionType, asName, body, SourceSpan.UNKNOWN, SourceSpan.UNKNOWN);
+    }
+
+    public ExceptClause(
+            Expression exceptionType,
+            String asName,
+            List<Statement> body,
+            SourceSpan span,
+            SourceSpan aliasSpan) {
         this.exceptionType = exceptionType;
         this.asName = asName;
-        this.body = body;
+        this.body = new ArrayList<>(body);
+        this.span = span == null ? SourceSpan.UNKNOWN : span;
+        this.aliasSpan = aliasSpan == null ? SourceSpan.UNKNOWN : aliasSpan;
     }
 
     // Constructor without asName
@@ -38,7 +54,15 @@ public class ExceptClause {
     }
 
     public List<Statement> getBody() {
-        return body;
+        return Collections.unmodifiableList(body);
+    }
+
+    public SourceSpan getSpan() {
+        return span;
+    }
+
+    public SourceSpan getAliasSpan() {
+        return aliasSpan;
     }
 
     // Helper methods

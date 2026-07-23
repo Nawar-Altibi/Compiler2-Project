@@ -11,14 +11,29 @@ public class ClassDefNode extends Statement {
     private final String name;                  // Class name
     private final List<Expression> bases;       // Base classes (can be empty)
     private final List<Statement> body;         // Class body
-    private final List<Decorator> decorators;   // Decorators (can be empty)
+    private final List<DecoratorNode> decorators;   // Decorators (can be empty)
+    private final SourceSpan nameSpan;
 
     public ClassDefNode(String name, List<Expression> bases,
-                        List<Statement> body, List<Decorator> decorators) {
+                        List<Statement> body,
+                        List<? extends DecoratorNode> decorators) {
+        this(name, bases, body, decorators, SourceSpan.UNKNOWN);
+    }
+
+    public ClassDefNode(String name, List<Expression> bases,
+                        List<Statement> body,
+                        List<? extends DecoratorNode> decorators,
+                        SourceSpan nameSpan) {
+        if (name == null || name.isEmpty()) {
+            throw new IllegalArgumentException("Class name cannot be empty");
+        }
         this.name = name;
-        this.bases = bases != null ? bases : new ArrayList<>();
-        this.body = body;
-        this.decorators = decorators != null ? decorators : new ArrayList<>();
+        this.bases = bases != null ? new ArrayList<>(bases) : new ArrayList<>();
+        this.body = new ArrayList<>(body);
+        this.decorators = decorators != null
+                ? new ArrayList<>(decorators)
+                : new ArrayList<>();
+        this.nameSpan = nameSpan == null ? SourceSpan.UNKNOWN : nameSpan;
 
         // Set parents for base classes
         for (Expression base : this.bases) {
@@ -26,8 +41,12 @@ public class ClassDefNode extends Statement {
         }
 
         // Set parents for body statements
-        for (Statement stmt : body) {
+        for (Statement stmt : this.body) {
             stmt.setParent(this);
+        }
+
+        for (DecoratorNode decorator : this.decorators) {
+            decorator.getExpression().setParent(this);
         }
     }
 
@@ -47,15 +66,19 @@ public class ClassDefNode extends Statement {
     }
 
     public List<Expression> getBases() {
-        return bases;
+        return java.util.Collections.unmodifiableList(bases);
     }
 
     public List<Statement> getBody() {
-        return body;
+        return java.util.Collections.unmodifiableList(body);
     }
 
-    public List<Decorator> getDecorators() {
-        return decorators;
+    public List<DecoratorNode> getDecorators() {
+        return java.util.Collections.unmodifiableList(decorators);
+    }
+
+    public SourceSpan getNameSpan() {
+        return nameSpan;
     }
 
     // Helper methods
@@ -97,4 +120,3 @@ public class ClassDefNode extends Statement {
         return sb.toString();
     }
 }
-

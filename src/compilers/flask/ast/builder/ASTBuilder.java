@@ -14,22 +14,138 @@ import compilers.flask.ast.nodes.statements.imports.*;
 import compilers.flask.ast.nodes.statements.simple.*;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.BaseErrorListener;
+import org.antlr.v4.runtime.RecognitionException;
+import org.antlr.v4.runtime.Recognizer;
+import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.tree.TerminalNode;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class ASTBuilder extends FlaskParserBaseVisitor<ASTNode> {
+
+    private final String sourceFile;
+    private final int sourceLineOffset;
+    private final int sourceFirstLineColumnOffset;
+
+    public ASTBuilder() {
+        this(SourceSpan.UNKNOWN_SOURCE);
+    }
+
+    public ASTBuilder(String sourceFile) {
+        this(sourceFile, 0, 0);
+    }
+
+    private ASTBuilder(
+            String sourceFile,
+            int sourceLineOffset,
+            int sourceFirstLineColumnOffset) {
+        this.sourceFile = sourceFile == null || sourceFile.trim().isEmpty()
+                ? SourceSpan.UNKNOWN_SOURCE
+                : sourceFile;
+        this.sourceLineOffset = sourceLineOffset;
+        this.sourceFirstLineColumnOffset = sourceFirstLineColumnOffset;
+    }
 
     /**
      * Helper method to set line and column information from parse tree context
      */
     private void setLocation(ASTNode node, org.antlr.v4.runtime.ParserRuleContext ctx) {
-        if (node != null && ctx != null && ctx.getStart() != null) {
-            node.setLine(ctx.getStart().getLine());
-            node.setColumn(ctx.getStart().getCharPositionInLine());
+        if (node != null) {
+            node.setSourceSpan(sourceSpan(ctx));
         }
+    }
+
+    private void setLocation(ASTNode node, SourceSpan span) {
+        if (node != null) {
+            node.setSourceSpan(span);
+        }
+    }
+
+    private SourceSpan sourceSpan(org.antlr.v4.runtime.ParserRuleContext ctx) {
+        if (ctx == null || ctx.getStart() == null) {
+            return SourceSpan.UNKNOWN;
+        }
+        Token stop = ctx.getStop() == null ? ctx.getStart() : ctx.getStop();
+        return sourceSpan(ctx.getStart(), stop);
+    }
+
+    private SourceSpan sourceSpan(TerminalNode terminalNode) {
+        return terminalNode == null
+                ? SourceSpan.UNKNOWN
+                : sourceSpan(terminalNode.getSymbol(), terminalNode.getSymbol());
+    }
+
+    private SourceSpan sourceSpan(Token start, Token stop) {
+        if (start == null) {
+            return SourceSpan.UNKNOWN;
+        }
+
+        int startLocalLine = Math.max(1, start.getLine());
+        int startLine = toAbsoluteLine(startLocalLine);
+        int startColumn = toAbsoluteColumn(
+                startLocalLine,
+                Math.max(0, start.getCharPositionInLine()));
+
+        Token effectiveStop = stop == null ? start : stop;
+        int stopLocalLine = Math.max(1, effectiveStop.getLine());
+        int endLine = toAbsoluteLine(stopLocalLine);
+        int endColumn = toAbsoluteColumn(
+                stopLocalLine,
+                Math.max(0, effectiveStop.getCharPositionInLine()));
+
+        String text = effectiveStop.getType() == Token.EOF
+                ? ""
+                : effectiveStop.getText();
+        if (text != null) {
+            for (int i = 0; i < text.length(); i++) {
+                char current = text.charAt(i);
+                if (current == '\r') {
+                    if (i + 1 < text.length() && text.charAt(i + 1) == '\n') {
+                        i++;
+                    }
+                    endLine++;
+                    endColumn = 0;
+                } else if (current == '\n' || current == '\f') {
+                    endLine++;
+                    endColumn = 0;
+                } else {
+                    endColumn++;
+                }
+            }
+        }
+
+        return new SourceSpan(
+                sourceFile,
+                startLine,
+                startColumn,
+                endLine,
+                endColumn);
+    }
+
+    private SourceSpan covering(SourceSpan start, SourceSpan end) {
+        if (start == null || !start.isKnown()) {
+            return end == null ? SourceSpan.UNKNOWN : end;
+        }
+        if (end == null || !end.isKnown()) {
+            return start;
+        }
+        return new SourceSpan(
+                sourceFile,
+                start.getStartLine(),
+                start.getStartColumn(),
+                end.getEndLine(),
+                end.getEndColumn());
+    }
+
+    private int toAbsoluteLine(int localLine) {
+        return localLine + sourceLineOffset;
+    }
+
+    private int toAbsoluteColumn(int localLine, int localColumn) {
+        return localColumn + (localLine == 1 ? sourceFirstLineColumnOffset : 0);
     }
 
     // ========================================
@@ -38,17 +154,17 @@ public class ASTBuilder extends FlaskParserBaseVisitor<ASTNode> {
 
     @Override
     public ASTNode visitProgram(FlaskParser.ProgramContext ctx) {
-        ProgramNode program = new ProgramNode();
-        setLocation(program, ctx);
+        List<Statement> statements = new ArrayList<>();
 
-        // Visit all statements
         for (FlaskParser.StatementContext stmtCtx : ctx.statement()) {
             ASTNode stmt = visit(stmtCtx);
             if (stmt instanceof Statement) {
-                program.addStatement((Statement) stmt);
+                statements.add((Statement) stmt);
             }
         }
 
+        ProgramNode program = new ProgramNode(statements);
+        setLocation(program, ctx);
         return program;
     }
 
@@ -109,13 +225,14 @@ public class ASTBuilder extends FlaskParserBaseVisitor<ASTNode> {
         Expression firstExpression = (Expression) visit(ctx.expression(0));
 
         if (ctx.ASSIGN() != null || ctx.augmentedAssignmentOp() != null) {
-            Expression value = (Expression) visit(ctx.expression(1));
             String operator = ctx.ASSIGN() != null ? "=" : ctx.augmentedAssignmentOp().getText();
 
             if (firstExpression == null) {
                 throw new IllegalStateException("Assignment target cannot be null at line " +
                         (ctx.getStart() != null ? ctx.getStart().getLine() : "unknown"));
             }
+
+            Expression value = (Expression) visit(ctx.expression(1));
             if (value == null) {
                 throw new IllegalStateException("Assignment value cannot be null at line " +
                         (ctx.getStart() != null ? ctx.getStart().getLine() : "unknown"));
@@ -144,8 +261,8 @@ public class ASTBuilder extends FlaskParserBaseVisitor<ASTNode> {
                 values.add(expr);
             }
 
-            // If multiple values, wrap in TupleNode with implicit=true
-            if (values.size() > 1) {
+            // A comma creates a tuple even when there is only one value.
+            if (!ctx.expression_list().COMMA().isEmpty()) {
                 TupleNode tuple = new TupleNode(values, false);  // false = implicit tuple (no parentheses)
                 setLocation(tuple, ctx);
                 returnValue = tuple;
@@ -243,7 +360,7 @@ public class ASTBuilder extends FlaskParserBaseVisitor<ASTNode> {
             // raise Exception from cause
             node = new RaiseNode(exception, cause);
         }
-        
+
         setLocation(node, ctx);
         return node;
     }
@@ -272,7 +389,7 @@ public class ASTBuilder extends FlaskParserBaseVisitor<ASTNode> {
         } else if (ctx.decoratedDef() != null) {
             return visit(ctx.decoratedDef());
         }
-        // TODO: Add other compound statement types
+
         return null;
     }
 
@@ -290,7 +407,12 @@ public class ASTBuilder extends FlaskParserBaseVisitor<ASTNode> {
         for (int i = 0; i < elifCount; i++) {
             Expression elifCondition = (Expression) visit(ctx.expression(i + 1));
             List<Statement> elifBody = convertSuiteToStatements(ctx.suite(i + 1));
-            elifClauses.add(new IfStatementNode.ElifClause(elifCondition, elifBody));
+            elifClauses.add(new IfStatementNode.ElifClause(
+                    elifCondition,
+                    elifBody,
+                    sourceSpan(
+                            ctx.ELIF(i).getSymbol(),
+                            ctx.suite(i + 1).getStop())));
         }
 
         // Visit else body (if present)
@@ -311,18 +433,28 @@ public class ASTBuilder extends FlaskParserBaseVisitor<ASTNode> {
         List<Statement> statements = new ArrayList<>();
 
         if (ctx.simple_statement() != null) {
-            // Single-line suite: simple_statement
             ASTNode stmt = visit(ctx.simple_statement());
-            if (stmt instanceof Statement) {
-                statements.add((Statement) stmt);
+            if (!(stmt instanceof Statement)) {
+                throw new IllegalStateException(
+                    "Expected Statement at line " +
+                    ctx.getStart().getLine() +
+                    " but got " +
+                    (stmt == null ? "null" : stmt.getClass().getSimpleName())
+                );
             }
+            statements.add((Statement) stmt);
         } else if (ctx.statement() != null) {
-            // Multi-line suite: statement+
             for (FlaskParser.StatementContext stmtCtx : ctx.statement()) {
                 ASTNode stmt = visit(stmtCtx);
-                if (stmt instanceof Statement) {
-                    statements.add((Statement) stmt);
+                if (!(stmt instanceof Statement)) {
+                    throw new IllegalStateException(
+                        "Expected Statement at line " +
+                        stmtCtx.getStart().getLine() +
+                        " but got " +
+                        (stmt == null ? "null" : stmt.getClass().getSimpleName())
+                    );
                 }
+                statements.add((Statement) stmt);
             }
         }
 
@@ -504,6 +636,7 @@ public class ASTBuilder extends FlaskParserBaseVisitor<ASTNode> {
     public ASTNode visitAtom_expression(FlaskParser.Atom_expressionContext ctx) {
         Expression expr = (Expression) visit(ctx.atom());
 
+
         // Process trailers (., [], ())
         for (FlaskParser.TrailerContext trailer : ctx.trailer()) {
             expr = (Expression) visitTrailerOnExpr(expr, trailer);
@@ -520,34 +653,38 @@ public class ASTBuilder extends FlaskParserBaseVisitor<ASTNode> {
             // Attribute access: obj.attr
             String attr = trailer.IDENTIFIER().getText();
             AttributeAccessNode node = new AttributeAccessNode(expr, attr);
-            setLocation(node, trailer);
+            setLocation(node, covering(expr.getSourceSpan(), sourceSpan(trailer)));
             return node;
         } else if (trailer.LPAREN() != null) {
             // Function call: func()
-            FunctionCallNode call = new FunctionCallNode(expr);
-            setLocation(call, trailer);
+            List<CallArgument> arguments = new ArrayList<>();
 
             if (trailer.arglist() != null) {
                 for (FlaskParser.ArgumentContext argCtx : trailer.arglist().argument()) {
                     if (argCtx.ASSIGN() != null) {
-                        // Keyword argument
                         String name = argCtx.IDENTIFIER().getText();
                         Expression value = (Expression) visit(argCtx.expression());
-                        call.addKwarg(name, value);
+                        arguments.add(CallArgument.keyword(
+                                name,
+                                value,
+                                sourceSpan(argCtx)));
                     } else {
-                        // Positional argument
                         Expression arg = (Expression) visit(argCtx.expression());
-                        call.addArg(arg);
+                        arguments.add(CallArgument.positional(
+                                arg,
+                                sourceSpan(argCtx)));
                     }
                 }
             }
 
+            FunctionCallNode call = new FunctionCallNode(expr, arguments);
+            setLocation(call, covering(expr.getSourceSpan(), sourceSpan(trailer)));
             return call;
         } else if (trailer.LBRACK() != null) {
             // Subscript: list[0]
             Expression index = (Expression) visit(trailer.expression());
             SubscriptNode node = new SubscriptNode(expr, index);
-            setLocation(node, trailer);
+            setLocation(node, covering(expr.getSourceSpan(), sourceSpan(trailer)));
             return node;
         }
 
@@ -560,33 +697,17 @@ public class ASTBuilder extends FlaskParserBaseVisitor<ASTNode> {
         if (ctx.IDENTIFIER() != null) {
             node = new IdentifierNode(ctx.IDENTIFIER().getText());
         } else if (ctx.NUMBER() != null) {
-            String text = ctx.NUMBER().getText();
-            if (text.contains(".")) {
-                node = LiteralNode.floatVal(Double.parseDouble(text));
-            } else {
-                node = LiteralNode.integer(Integer.parseInt(text));
-            }
+            node = parseNumberLiteral(ctx.NUMBER().getText(), ctx);
         } else if (ctx.STRING() != null) {
             String text = ctx.STRING().getText();
-            
-            // Check if it's an F-string (starts with 'f' or 'F')
-            if (text.length() > 0 && (text.charAt(0) == 'f' || text.charAt(0) == 'F')) {
-                // Parse F-string
-                node = parseFString(text, ctx);
+            StringLiteralInfo stringInfo = parseStringLiteralToken(text, ctx);
+
+            if (stringInfo.formatted) {
+                node = parseFString(stringInfo, ctx);
             } else {
-                // Regular string - remove quotes
-                String content = text;
-                if (content.length() >= 2) {
-                    // Remove first and last quote
-                    char first = content.charAt(0);
-                    if (first == 'r' || first == 'R') {
-                        // Raw string: remove 'r' prefix and quotes
-                        content = content.substring(2, content.length() - 1);
-                    } else {
-                        // Regular string: remove quotes
-                        content = content.substring(1, content.length() - 1);
-                    }
-                }
+                String content = stringInfo.raw
+                        ? stringInfo.content
+                        : decodePythonEscapes(stringInfo.content, ctx);
                 node = LiteralNode.string(content);
             }
         } else if (ctx.TRUE() != null) {
@@ -595,9 +716,8 @@ public class ASTBuilder extends FlaskParserBaseVisitor<ASTNode> {
             node = LiteralNode.bool(false);
         } else if (ctx.NONE() != null) {
             node = LiteralNode.none();
-        } else if (ctx.LPAREN() != null && ctx.expression() != null) {
-            // Parenthesized expression
-            return visit(ctx.expression());
+        } else if (ctx.parenthesized() != null) {
+            return visit(ctx.parenthesized());
         } else if (ctx.LBRACK() != null) {
             // List literal: [] or [1, 2, 3]
             List<Expression> elements = new ArrayList<>();
@@ -620,7 +740,10 @@ public class ASTBuilder extends FlaskParserBaseVisitor<ASTNode> {
                         Expression key = (Expression) visit(itemCtx.expression(0));
                         Expression value = (Expression) visit(itemCtx.expression(1));
                         if (key != null && value != null) {
-                            items.add(new DictNode.DictItem(key, value));
+                            items.add(new DictNode.DictItem(
+                                    key,
+                                    value,
+                                    sourceSpan(itemCtx)));
                         }
                     }
                     node = new DictNode(items);
@@ -644,6 +767,49 @@ public class ASTBuilder extends FlaskParserBaseVisitor<ASTNode> {
             setLocation(node, ctx);
         }
         return node;
+    }
+
+    @Override
+    public ASTNode visitParenthesized(FlaskParser.ParenthesizedContext ctx) {
+        List<Expression> elements = new ArrayList<>();
+        for (FlaskParser.ExpressionContext expressionContext : ctx.expression()) {
+            Expression expression = (Expression) visit(expressionContext);
+            if (expression != null) {
+                elements.add(expression);
+            }
+        }
+
+        if (elements.size() == 1 && ctx.COMMA().isEmpty()) {
+            // `(x)` is grouping and deliberately does not introduce a node.
+            return elements.get(0);
+        }
+
+        TupleNode tuple = new TupleNode(elements, true);
+        setLocation(tuple, ctx);
+        return tuple;
+    }
+
+    private LiteralNode parseNumberLiteral(
+            String text,
+            org.antlr.v4.runtime.ParserRuleContext ctx) {
+        try {
+            if (text.indexOf('.') >= 0 || text.indexOf('e') >= 0 || text.indexOf('E') >= 0) {
+                return LiteralNode.floatVal(Double.parseDouble(text));
+            }
+
+            try {
+                return LiteralNode.integer(Integer.parseInt(text));
+            } catch (NumberFormatException outOfIntRange) {
+                return LiteralNode.integer(new BigInteger(text));
+            }
+        } catch (NumberFormatException invalidNumber) {
+            int line = ctx != null && ctx.getStart() != null
+                    ? toAbsoluteLine(ctx.getStart().getLine())
+                    : -1;
+            throw new IllegalArgumentException(
+                    "Invalid numeric literal '" + text + "' at line " + line,
+                    invalidNumber);
+        }
     }
 
     @Override
@@ -706,8 +872,18 @@ public class ASTBuilder extends FlaskParserBaseVisitor<ASTNode> {
         } else if (ctx.importList() != null) {
             // from module import item1, item2, ...
             List<FromImportNode.ImportItem> items = new ArrayList<>();
-            for (org.antlr.v4.runtime.tree.TerminalNode identifier : ctx.importList().IDENTIFIER()) {
-                items.add(new FromImportNode.ImportItem(identifier.getText()));
+            for (FlaskParser.ImportItemContext itemContext
+                    : ctx.importList().importItem()) {
+                TerminalNode nameToken = itemContext.IDENTIFIER(0);
+                TerminalNode aliasToken = itemContext.AS() == null
+                        ? null
+                        : itemContext.IDENTIFIER(1);
+                items.add(new FromImportNode.ImportItem(
+                        nameToken.getText(),
+                        aliasToken == null ? null : aliasToken.getText(),
+                        sourceSpan(itemContext),
+                        sourceSpan(nameToken),
+                        sourceSpan(aliasToken)));
             }
 
             FromImportNode node = new FromImportNode(moduleName, items);
@@ -751,79 +927,75 @@ public class ASTBuilder extends FlaskParserBaseVisitor<ASTNode> {
 
         // Visit body (suite)
         List<Statement> body = convertSuiteToStatements(ctx.suite());
+        Expression returnType = ctx.expression() == null
+                ? null
+                : (Expression) visit(ctx.expression());
 
-        FunctionDefNode node = new FunctionDefNode(name, parameters, body);
+        FunctionDefNode node = new FunctionDefNode(
+                name,
+                parameters,
+                body,
+                new ArrayList<DecoratorNode>(),
+                returnType,
+                sourceSpan(ctx.IDENTIFIER()));
         setLocation(node, ctx);
         return node;
     }
 
     @Override
     public ASTNode visitDecoratedDef(FlaskParser.DecoratedDefContext ctx) {
-        // Visit decorators
-        List<Decorator> decorators = new ArrayList<>();
+        List<DecoratorNode> decorators = new ArrayList<>();
         for (FlaskParser.DecoratorContext decoratorCtx : ctx.decorator()) {
             decorators.add(buildDecorator(decoratorCtx));
         }
 
-        // Visit function definition
-        // Note: decoratedDef currently only supports functionDef in the generated parser
-        // If classStatement support is needed, regenerate the parser after updating the grammar
-        FunctionDefNode functionDef = (FunctionDefNode) visit(ctx.functionDef());
-        
-        // Create new function def with decorators
-        FunctionDefNode node = new FunctionDefNode(
-            functionDef.getName(),
-            functionDef.getParameters(),
-            functionDef.getBody(),
-            decorators,
-            functionDef.getReturnType()
-        );
-        setLocation(node, ctx);
-        return node;
+        if (ctx.functionDef() != null) {
+            FunctionDefNode functionDef =
+                    (FunctionDefNode) visit(ctx.functionDef());
+            FunctionDefNode decoratedFunction = new FunctionDefNode(
+                    functionDef.getName(),
+                    functionDef.getParameters(),
+                    functionDef.getBody(),
+                    decorators,
+                    functionDef.getReturnType(),
+                    functionDef.getNameSpan());
+            setLocation(decoratedFunction, ctx);
+            return decoratedFunction;
+        }
+
+        ClassDefNode classDef = (ClassDefNode) visit(ctx.classStatement());
+        ClassDefNode decoratedClass = new ClassDefNode(
+                classDef.getName(),
+                classDef.getBases(),
+                classDef.getBody(),
+                decorators,
+                classDef.getNameSpan());
+        setLocation(decoratedClass, ctx);
+        return decoratedClass;
     }
 
     /**
-     * Build Decorator object from decorator context
+     * Build a decorator through the canonical expression lowering path.
      */
-    private Decorator buildDecorator(FlaskParser.DecoratorContext ctx) {
-        // Build decorator name (dotted name)
-        Expression name = buildDottedNameExpression(ctx.dottedName());
-
-        // Visit arguments if present
-        List<Expression> args = new ArrayList<>();
-        Map<String, Expression> kwargs = new HashMap<>();
-        
-        if (ctx.arglist() != null) {
-            for (FlaskParser.ArgumentContext argCtx : ctx.arglist().argument()) {
-                if (argCtx.ASSIGN() != null) {
-                    // Keyword argument
-                    String kwargName = argCtx.IDENTIFIER().getText();
-                    Expression value = (Expression) visit(argCtx.expression());
-                    kwargs.put(kwargName, value);
-                } else {
-                    // Positional argument
-                    Expression arg = (Expression) visit(argCtx.expression());
-                    args.add(arg);
-                }
-            }
-        }
-
-        return new Decorator(name, args, kwargs);
+    private DecoratorNode buildDecorator(FlaskParser.DecoratorContext ctx) {
+        Expression expression = (Expression) visit(ctx.expression());
+        return new DecoratorNode(expression, sourceSpan(ctx));
     }
 
     /**
      * Build Expression from dotted name (e.g., "app.route" -> AttributeAccessNode)
      */
     private Expression buildDottedNameExpression(FlaskParser.DottedNameContext ctx) {
-        if (ctx.IDENTIFIER().size() == 1) {
-            return new IdentifierNode(ctx.IDENTIFIER(0).getText());
-        }
+        IdentifierNode firstIdentifier = new IdentifierNode(ctx.IDENTIFIER(0).getText());
+        setLocation(firstIdentifier, ctx);
 
         // Build chain of attribute accesses: app.route -> app.route
-        Expression expr = new IdentifierNode(ctx.IDENTIFIER(0).getText());
+        Expression expr = firstIdentifier;
         for (int i = 1; i < ctx.IDENTIFIER().size(); i++) {
             String attr = ctx.IDENTIFIER(i).getText();
-            expr = new AttributeAccessNode(expr, attr);
+            AttributeAccessNode attribute = new AttributeAccessNode(expr, attr);
+            setLocation(attribute, ctx);
+            expr = attribute;
         }
         return expr;
     }
@@ -834,17 +1006,27 @@ public class ASTBuilder extends FlaskParserBaseVisitor<ASTNode> {
     private Parameter buildParameter(FlaskParser.ParameterContext ctx) {
         String name = ctx.IDENTIFIER().getText();
         Expression defaultValue = null;
-        
-        if (ctx.ASSIGN() != null && ctx.expression() != null) {
-            defaultValue = (Expression) visit(ctx.expression());
+        Expression typeHint = null;
+        int expressionIndex = 0;
+
+        if (ctx.COLON() != null) {
+            typeHint = (Expression) visit(ctx.expression(expressionIndex++));
+        }
+        if (ctx.ASSIGN() != null) {
+            defaultValue = (Expression) visit(ctx.expression(expressionIndex));
         }
 
-        return new Parameter(name, defaultValue);
+        return new Parameter(
+                name,
+                defaultValue,
+                typeHint,
+                sourceSpan(ctx),
+                sourceSpan(ctx.IDENTIFIER()));
     }
 
     @Override
     public ASTNode visitForStatement(FlaskParser.ForStatementContext ctx) {
-        // Visit target (can be targetList, but for now we'll handle single target)
+        // A target list is represented as an implicit tuple for unpacking.
         Expression target = buildTargetListExpression(ctx.targetList());
         
         // Visit iterable
@@ -907,11 +1089,10 @@ public class ASTBuilder extends FlaskParserBaseVisitor<ASTNode> {
         Expression asName = null;
 
         if (ctx.AS() != null && ctx.targetList() != null) {
-            // For now, handle single target in targetList
             asName = buildTargetListExpression(ctx.targetList());
         }
 
-        return new WithItem(contextExpr, asName);
+        return new WithItem(contextExpr, asName, sourceSpan(ctx));
     }
 
     @Override
@@ -936,24 +1117,32 @@ public class ASTBuilder extends FlaskParserBaseVisitor<ASTNode> {
             // Visit body for this except clause (suite is inside exceptClause)
             List<Statement> body = convertSuiteToStatements(exceptCtx.suite());
 
-            exceptClauses.add(new ExceptClause(exceptionType, asName, body));
+            exceptClauses.add(new ExceptClause(
+                    exceptionType,
+                    asName,
+                    body,
+                    sourceSpan(exceptCtx),
+                    sourceSpan(exceptCtx.IDENTIFIER())));
         }
 
-        // Visit else body (if present, it's in suite(1) if no except, or after except clauses)
+        // except-clause suites belong to ExceptClauseContext, not to
+        // TryStatementContext.suite().  The direct suites are therefore always
+        // ordered as: try, optional else, optional finally.
+        int directSuiteIndex = 1;
         List<Statement> elseBody = null;
         if (ctx.ELSE() != null) {
-            // Find else suite - it's after all except clauses
-            int elseSuiteIndex = 1 + ctx.exceptClause().size();
-            if (ctx.suite().size() > elseSuiteIndex) {
-                elseBody = convertSuiteToStatements(ctx.suite(elseSuiteIndex));
-            }
+            elseBody = convertSuiteToStatements(ctx.suite(directSuiteIndex++));
         }
 
-        // Visit finally body
         List<Statement> finallyBody = null;
         if (ctx.FINALLY() != null) {
-            // Finally is always the last suite
-            finallyBody = convertSuiteToStatements(ctx.suite(ctx.suite().size() - 1));
+            finallyBody = convertSuiteToStatements(ctx.suite(directSuiteIndex++));
+        }
+
+        if (directSuiteIndex != ctx.suite().size()) {
+            throw new IllegalStateException(
+                    "Unexpected try-statement suite layout at line " +
+                    toAbsoluteLine(ctx.getStart().getLine()));
         }
 
         TryStatementNode node = new TryStatementNode(tryBody, exceptClauses, elseBody, finallyBody);
@@ -977,146 +1166,539 @@ public class ASTBuilder extends FlaskParserBaseVisitor<ASTNode> {
         // Visit body
         List<Statement> body = convertSuiteToStatements(ctx.suite());
 
-        ClassDefNode node = new ClassDefNode(name, bases, body);
+        ClassDefNode node = new ClassDefNode(
+                name,
+                bases,
+                body,
+                new ArrayList<DecoratorNode>(),
+                sourceSpan(ctx.IDENTIFIER()));
         setLocation(node, ctx);
         return node;
     }
 
-    /**
-     * Build Expression from targetList
-     * For now, handles single target (can be extended for tuple unpacking)
-     */
+    /** Build an assignment target or an implicit tuple used for unpacking. */
     private Expression buildTargetListExpression(FlaskParser.TargetListContext ctx) {
-        // For single target, just visit it
+        if (ctx == null || ctx.target().isEmpty()) {
+            throw new IllegalArgumentException("Target list cannot be empty");
+        }
+
         if (ctx.target().size() == 1) {
             return (Expression) visit(ctx.target(0));
         }
 
-        // For multiple targets (tuple unpacking), create a tuple expression
-        // For now, we'll just use the first target
-        // TODO: Handle tuple unpacking properly
-        return (Expression) visit(ctx.target(0));
+        List<Expression> targets = new ArrayList<>();
+        for (FlaskParser.TargetContext targetContext : ctx.target()) {
+            Expression target = (Expression) visit(targetContext);
+            if (target == null) {
+                throw new IllegalStateException(
+                        "Failed to build target at line " +
+                        toAbsoluteLine(targetContext.getStart().getLine()));
+            }
+            targets.add(target);
+        }
+
+        TupleNode tuple = new TupleNode(targets, false);
+        setLocation(tuple, ctx);
+        return tuple;
+    }
+
+    private static final class StringLiteralInfo {
+        private final String tokenText;
+        private final String content;
+        private final int contentStartIndex;
+        private final boolean raw;
+        private final boolean formatted;
+
+        private StringLiteralInfo(
+                String tokenText,
+                String content,
+                int contentStartIndex,
+                boolean raw,
+                boolean formatted) {
+            this.tokenText = tokenText;
+            this.content = content;
+            this.contentStartIndex = contentStartIndex;
+            this.raw = raw;
+            this.formatted = formatted;
+        }
+    }
+
+    private static final class SourcePosition {
+        private final int line;
+        private final int column;
+
+        private SourcePosition(int line, int column) {
+            this.line = line;
+            this.column = column;
+        }
+    }
+
+    private static final class SyntaxErrorCollector extends BaseErrorListener {
+        private String firstError;
+
+        @Override
+        public void syntaxError(
+                Recognizer<?, ?> recognizer,
+                Object offendingSymbol,
+                int line,
+                int charPositionInLine,
+                String msg,
+                RecognitionException e) {
+            if (firstError == null) {
+                firstError = "line " + line + ":" + charPositionInLine + " " + msg;
+            }
+        }
+
+        private boolean hasErrors() {
+            return firstError != null;
+        }
+
+        private String getFirstError() {
+            return firstError;
+        }
+    }
+
+    private StringLiteralInfo parseStringLiteralToken(
+            String tokenText,
+            org.antlr.v4.runtime.ParserRuleContext ctx) {
+        if (tokenText == null || tokenText.isEmpty()) {
+            throw stringLiteralError("Empty string token", ctx);
+        }
+
+        int prefixLength = 0;
+        boolean raw = false;
+        boolean formatted = false;
+        char first = tokenText.charAt(0);
+        if (first == 'r' || first == 'R' || first == 'f' || first == 'F') {
+            prefixLength = 1;
+            raw = first == 'r' || first == 'R';
+            formatted = first == 'f' || first == 'F';
+        }
+
+        if (prefixLength >= tokenText.length()) {
+            throw stringLiteralError("Missing quote after string prefix", ctx);
+        }
+
+        char quote = tokenText.charAt(prefixLength);
+        if (quote != '\'' && quote != '"') {
+            throw stringLiteralError("Unsupported string delimiter", ctx);
+        }
+
+        int delimiterLength = startsWithRepeatedQuote(tokenText, prefixLength, quote, 3) ? 3 : 1;
+        int contentStart = prefixLength + delimiterLength;
+        int contentEnd = tokenText.length() - delimiterLength;
+        if (contentEnd < contentStart ||
+                !startsWithRepeatedQuote(tokenText, contentEnd, quote, delimiterLength)) {
+            throw stringLiteralError("Unterminated string literal", ctx);
+        }
+
+        return new StringLiteralInfo(
+                tokenText,
+                tokenText.substring(contentStart, contentEnd),
+                contentStart,
+                raw,
+                formatted);
+    }
+
+    private boolean startsWithRepeatedQuote(String text, int offset, char quote, int count) {
+        if (offset < 0 || offset + count > text.length()) {
+            return false;
+        }
+        for (int i = 0; i < count; i++) {
+            if (text.charAt(offset + i) != quote) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private IllegalArgumentException stringLiteralError(
+            String message,
+            org.antlr.v4.runtime.ParserRuleContext ctx) {
+        if (ctx == null || ctx.getStart() == null) {
+            return new IllegalArgumentException(message);
+        }
+        int localLine = ctx.getStart().getLine();
+        return new IllegalArgumentException(
+                message + " at line " + toAbsoluteLine(localLine) +
+                ", column " +
+                toAbsoluteColumn(localLine, ctx.getStart().getCharPositionInLine()));
+    }
+
+    private String decodePythonEscapes(
+            String text,
+            org.antlr.v4.runtime.ParserRuleContext ctx) {
+        StringBuilder decoded = new StringBuilder(text.length());
+        for (int i = 0; i < text.length(); i++) {
+            char current = text.charAt(i);
+            if (current != '\\') {
+                decoded.append(current);
+                continue;
+            }
+
+            if (i + 1 >= text.length()) {
+                throw stringLiteralError("Trailing backslash in string literal", ctx);
+            }
+
+            char escape = text.charAt(++i);
+            switch (escape) {
+                case '\n':
+                    break;
+                case '\r':
+                    if (i + 1 < text.length() && text.charAt(i + 1) == '\n') {
+                        i++;
+                    }
+                    break;
+                case '\\':
+                    decoded.append('\\');
+                    break;
+                case '\'':
+                    decoded.append('\'');
+                    break;
+                case '"':
+                    decoded.append('"');
+                    break;
+                case 'a':
+                    decoded.append('\u0007');
+                    break;
+                case 'b':
+                    decoded.append('\b');
+                    break;
+                case 'f':
+                    decoded.append('\f');
+                    break;
+                case 'n':
+                    decoded.append('\n');
+                    break;
+                case 'r':
+                    decoded.append('\r');
+                    break;
+                case 't':
+                    decoded.append('\t');
+                    break;
+                case 'v':
+                    decoded.append('\u000B');
+                    break;
+                case 'x': {
+                    int codePoint = parseFixedHexEscape(text, i + 1, 2, "\\x", ctx);
+                    decoded.append((char) codePoint);
+                    i += 2;
+                    break;
+                }
+                case 'u': {
+                    int codePoint = parseFixedHexEscape(text, i + 1, 4, "\\u", ctx);
+                    decoded.appendCodePoint(codePoint);
+                    i += 4;
+                    break;
+                }
+                case 'U': {
+                    int codePoint = parseFixedHexEscape(text, i + 1, 8, "\\U", ctx);
+                    if (!Character.isValidCodePoint(codePoint)) {
+                        throw stringLiteralError("Unicode escape is outside the valid range", ctx);
+                    }
+                    decoded.appendCodePoint(codePoint);
+                    i += 8;
+                    break;
+                }
+                default:
+                    if (escape >= '0' && escape <= '7') {
+                        int value = escape - '0';
+                        int consumed = 1;
+                        while (consumed < 3 && i + 1 < text.length()) {
+                            char digit = text.charAt(i + 1);
+                            if (digit < '0' || digit > '7') {
+                                break;
+                            }
+                            value = value * 8 + (digit - '0');
+                            i++;
+                            consumed++;
+                        }
+                        decoded.append((char) value);
+                    } else {
+                        // Python preserves unknown escapes (and may warn about them).
+                        decoded.append('\\').append(escape);
+                    }
+                    break;
+            }
+        }
+        return decoded.toString();
+    }
+
+    private int parseFixedHexEscape(
+            String text,
+            int start,
+            int length,
+            String escapeName,
+            org.antlr.v4.runtime.ParserRuleContext ctx) {
+        if (start + length > text.length()) {
+            throw stringLiteralError(
+                    "Incomplete " + escapeName + " escape in string literal",
+                    ctx);
+        }
+
+        long value = 0;
+        for (int i = start; i < start + length; i++) {
+            int digit = Character.digit(text.charAt(i), 16);
+            if (digit < 0) {
+                throw stringLiteralError(
+                        "Invalid hexadecimal digit in " + escapeName + " escape",
+                        ctx);
+            }
+            value = value * 16 + digit;
+        }
+
+        if (value > Integer.MAX_VALUE) {
+            throw stringLiteralError("Unicode escape is outside the valid range", ctx);
+        }
+        return (int) value;
     }
 
     /**
-     * Parse F-string: f"Hello {name}" or f'Error: {io_err}'
-     * Extracts string parts and expressions from {}
+     * Parse the basic f-string subset represented by the current AST.  Format
+     * specifications and conversions are rejected explicitly rather than being
+     * silently dropped.
      */
-    private FStringNode parseFString(String fstringText, org.antlr.v4.runtime.ParserRuleContext ctx) {
+    private FStringNode parseFString(
+            StringLiteralInfo stringInfo,
+            org.antlr.v4.runtime.ParserRuleContext ctx) {
         List<FStringPart> parts = new ArrayList<>();
-        
-        // Remove 'f' or 'F' prefix and quotes
-        String content = fstringText;
-        if (content.length() >= 2) {
-            char first = content.charAt(0);
-            if (first == 'f' || first == 'F') {
-                // Remove 'f' prefix
-                content = content.substring(1);
-            }
-            // Remove quotes (first and last)
-            if (content.length() >= 2) {
-                content = content.substring(1, content.length() - 1);
-            }
-        }
-        
-        // Parse content to extract string parts and expressions
-        int i = 0;
+        String content = stringInfo.content;
         StringBuilder currentString = new StringBuilder();
-        
+
+        int i = 0;
         while (i < content.length()) {
-            if (content.charAt(i) == '{') {
-                // Check for escaped brace: {{
+            char current = content.charAt(i);
+            if (current == '{') {
                 if (i + 1 < content.length() && content.charAt(i + 1) == '{') {
                     currentString.append('{');
                     i += 2;
-                } else {
-                    // Expression start: save current string part
-                    if (currentString.length() > 0) {
-                        parts.add(new FStringPart.StringPart(currentString.toString()));
-                        currentString = new StringBuilder();
-                    }
-                    
-                    // Find matching closing brace
-                    int braceCount = 1;
-                    int j = i + 1;
-                    while (j < content.length() && braceCount > 0) {
-                        if (content.charAt(j) == '{') {
-                            braceCount++;
-                        } else if (content.charAt(j) == '}') {
-                            braceCount--;
-                        }
-                        j++;
-                    }
-                    
-                    if (braceCount == 0) {
-                        // Extract expression
-                        String exprText = content.substring(i + 1, j - 1);
-                        Expression expr = parseExpressionFromString(exprText, ctx);
-                        if (expr != null) {
-                            parts.add(new FStringPart.ExpressionPart(expr));
-                        }
-                        i = j;
-                    } else {
-                        // Unmatched brace - treat as literal
-                        currentString.append('{');
-                        i++;
-                    }
+                    continue;
                 }
-            } else if (content.charAt(i) == '}') {
-                // Check for escaped brace: }}
+
+                appendFStringTextPart(parts, currentString, stringInfo.raw, ctx);
+                int closingBrace = findMatchingFStringBrace(content, i + 1);
+                if (closingBrace < 0) {
+                    SourcePosition position = sourcePositionAt(
+                            ctx,
+                            stringInfo.tokenText,
+                            stringInfo.contentStartIndex + i);
+                    throw fStringError("Unmatched '{' in f-string", position, null);
+                }
+
+                String expressionText = content.substring(i + 1, closingBrace);
+                SourcePosition expressionPosition = sourcePositionAt(
+                        ctx,
+                        stringInfo.tokenText,
+                        stringInfo.contentStartIndex + i + 1);
+                if (expressionText.trim().isEmpty()) {
+                    throw fStringError(
+                            "Empty expression in f-string",
+                            expressionPosition,
+                            null);
+                }
+
+                Expression expression = parseExpressionFromString(
+                        expressionText,
+                        expressionPosition);
+                parts.add(new FStringPart.ExpressionPart(
+                        expression,
+                        expression.getSourceSpan()));
+                i = closingBrace + 1;
+            } else if (current == '}') {
                 if (i + 1 < content.length() && content.charAt(i + 1) == '}') {
                     currentString.append('}');
                     i += 2;
-                } else {
-                    // Single } - treat as literal
-                    currentString.append('}');
-                    i++;
+                    continue;
                 }
+
+                SourcePosition position = sourcePositionAt(
+                        ctx,
+                        stringInfo.tokenText,
+                        stringInfo.contentStartIndex + i);
+                throw fStringError("Single '}' is not allowed in f-string", position, null);
             } else {
-                currentString.append(content.charAt(i));
+                currentString.append(current);
                 i++;
             }
         }
-        
-        // Add remaining string part
-        if (currentString.length() > 0) {
-            parts.add(new FStringPart.StringPart(currentString.toString()));
-        }
-        
+
+        appendFStringTextPart(parts, currentString, stringInfo.raw, ctx);
         FStringNode node = new FStringNode(parts);
         setLocation(node, ctx);
         return node;
     }
 
+    private void appendFStringTextPart(
+            List<FStringPart> parts,
+            StringBuilder text,
+            boolean raw,
+            org.antlr.v4.runtime.ParserRuleContext ctx) {
+        if (text.length() == 0) {
+            return;
+        }
+        String value = raw ? text.toString() : decodePythonEscapes(text.toString(), ctx);
+        parts.add(new FStringPart.StringPart(value, sourceSpan(ctx)));
+        text.setLength(0);
+    }
+
     /**
-     * Parse an expression from a string (used for F-string expressions)
+     * Find the closing brace while ignoring braces inside quoted string
+     * literals in the embedded expression.
      */
-    private Expression parseExpressionFromString(String exprText, org.antlr.v4.runtime.ParserRuleContext ctx) {
-        try {
-            // Create a new parser for this expression
-            org.antlr.v4.runtime.CharStream input = CharStreams.fromString(exprText);
-            FlaskLexer lexer = new FlaskLexer(input);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            FlaskParser parser = new FlaskParser(tokens);
-            
-            // Disable error listeners to avoid noise
-            parser.removeErrorListeners();
-            
-            // Parse as expression
-            FlaskParser.ExpressionContext exprCtx = parser.expression();
-            
-            if (exprCtx != null && parser.getNumberOfSyntaxErrors() == 0) {
-                // Create a new ASTBuilder to visit the expression
-                ASTBuilder builder = new ASTBuilder();
-                ASTNode result = builder.visit(exprCtx);
-                if (result instanceof Expression) {
-                    return (Expression) result;
+    private int findMatchingFStringBrace(String content, int start) {
+        int depth = 1;
+        char quote = '\0';
+        int quoteLength = 0;
+
+        for (int i = start; i < content.length(); i++) {
+            char current = content.charAt(i);
+            if (quote != '\0') {
+                if (current == '\\') {
+                    i++;
+                    continue;
+                }
+                if (quoteLength == 3) {
+                    if (startsWithRepeatedQuote(content, i, quote, 3)) {
+                        i += 2;
+                        quote = '\0';
+                        quoteLength = 0;
+                    }
+                } else if (current == quote) {
+                    quote = '\0';
+                    quoteLength = 0;
+                }
+                continue;
+            }
+
+            if (current == '\'' || current == '"') {
+                quote = current;
+                quoteLength = startsWithRepeatedQuote(content, i, current, 3) ? 3 : 1;
+                if (quoteLength == 3) {
+                    i += 2;
+                }
+            } else if (current == '{') {
+                depth++;
+            } else if (current == '}') {
+                depth--;
+                if (depth == 0) {
+                    return i;
                 }
             }
-        } catch (Exception e) {
-            // If parsing fails, return null (will be treated as string literal)
-            // This can happen with complex expressions or syntax errors
         }
-        return null;
+        return -1;
+    }
+
+    private SourcePosition sourcePositionAt(
+            org.antlr.v4.runtime.ParserRuleContext ctx,
+            String tokenText,
+            int tokenIndex) {
+        int localLine = ctx.getStart().getLine();
+        int line = toAbsoluteLine(localLine);
+        int column = toAbsoluteColumn(
+                localLine,
+                ctx.getStart().getCharPositionInLine());
+        int limit = Math.min(Math.max(tokenIndex, 0), tokenText.length());
+
+        for (int i = 0; i < limit; i++) {
+            char current = tokenText.charAt(i);
+            if (current == '\r') {
+                if (i + 1 < limit && tokenText.charAt(i + 1) == '\n') {
+                    i++;
+                }
+                line++;
+                column = 0;
+            } else if (current == '\n' || current == '\f') {
+                line++;
+                column = 0;
+            } else {
+                column++;
+            }
+        }
+        return new SourcePosition(line, column);
+    }
+
+    private IllegalArgumentException fStringError(
+            String message,
+            SourcePosition position,
+            Throwable cause) {
+        String locatedMessage = message + " at line " + position.line +
+                ", column " + position.column;
+        return cause == null
+                ? new IllegalArgumentException(locatedMessage)
+                : new IllegalArgumentException(locatedMessage, cause);
+    }
+
+    /** Parse an embedded f-string expression and require complete consumption. */
+    private Expression parseExpressionFromString(
+            String expressionText,
+            SourcePosition sourcePosition) {
+        SyntaxErrorCollector lexerErrors = new SyntaxErrorCollector();
+        SyntaxErrorCollector parserErrors = new SyntaxErrorCollector();
+
+        try {
+            org.antlr.v4.runtime.CharStream input = CharStreams.fromString(expressionText);
+            FlaskLexer lexer = new FlaskLexer(input);
+            lexer.removeErrorListeners();
+            lexer.addErrorListener(lexerErrors);
+
+            CommonTokenStream tokens = new CommonTokenStream(lexer);
+            FlaskParser parser = new FlaskParser(tokens);
+            parser.removeErrorListeners();
+            parser.addErrorListener(parserErrors);
+
+            FlaskParser.ExpressionContext expressionContext = parser.expression();
+
+            // FlaskLexerBase emits a synthetic NEWLINE before EOF.  It is not
+            // part of the expression, but no other trailing token is accepted.
+            while (tokens.LA(1) == FlaskLexer.NEWLINE) {
+                tokens.consume();
+            }
+
+            if (lexerErrors.hasErrors()) {
+                throw fStringError(
+                        "Invalid f-string expression: " + lexerErrors.getFirstError(),
+                        sourcePosition,
+                        null);
+            }
+            if (parserErrors.hasErrors() || parser.getNumberOfSyntaxErrors() != 0) {
+                String detail = parserErrors.hasErrors()
+                        ? parserErrors.getFirstError()
+                        : "syntax error";
+                throw fStringError(
+                        "Invalid f-string expression: " + detail,
+                        sourcePosition,
+                        null);
+            }
+            if (tokens.LA(1) != Token.EOF) {
+                throw fStringError(
+                        "Unsupported trailing syntax in f-string expression near '" +
+                        tokens.LT(1).getText() + "'",
+                        sourcePosition,
+                        null);
+            }
+            if (expressionContext == null) {
+                throw fStringError(
+                        "F-string expression did not produce a parse tree",
+                        sourcePosition,
+                        null);
+            }
+
+            ASTBuilder embeddedBuilder = new ASTBuilder(
+                    sourceFile,
+                    sourcePosition.line - 1,
+                    sourcePosition.column);
+            ASTNode result = embeddedBuilder.visit(expressionContext);
+            if (!(result instanceof Expression)) {
+                throw fStringError(
+                        "F-string expression did not produce an expression AST",
+                        sourcePosition,
+                        null);
+            }
+            return (Expression) result;
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            throw fStringError("Failed to parse f-string expression", sourcePosition, e);
+        }
     }
 }

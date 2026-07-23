@@ -16,7 +16,9 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.Token;
 
 
+import java.io.PrintStream;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Builds HTML AST from the ANTLR parse tree produced by HtmlCssParser.
@@ -27,6 +29,27 @@ import java.util.List;
  * - For <style> ... </style> stores raw CSS in StyleNode (later you can parse CSS AST separately).
  */
 public class HtmlAstBuilder extends HtmlCssParserBaseVisitor<HtmlNode> {
+
+    private final PrintStream errorStream;
+    private final boolean debug;
+
+    public HtmlAstBuilder() {
+        this(System.err, false);
+    }
+
+    public HtmlAstBuilder(PrintStream errorStream) {
+        this(errorStream, false);
+    }
+
+    /**
+     * Creates a stream-injected builder. Java implementation traces are an
+     * explicit presentation choice and remain disabled for normal compiler
+     * diagnostics.
+     */
+    public HtmlAstBuilder(PrintStream errorStream, boolean debug) {
+        this.errorStream = Objects.requireNonNull(errorStream, "errorStream");
+        this.debug = debug;
+    }
 
     private static boolean isVoidElement(String tag) {
         if (tag == null) return false;
@@ -181,7 +204,7 @@ public class HtmlAstBuilder extends HtmlCssParserBaseVisitor<HtmlNode> {
         if (ctx.TAG_NAME().size() > 1) {
             String closeName = ctx.TAG_NAME(1).getText();
             if (!openName.equalsIgnoreCase(closeName)) {
-                System.err.println("Mismatched closing tag: <" + openName + "> closed by </" + closeName + ">"
+                errorStream.println("Mismatched closing tag: <" + openName + "> closed by </" + closeName + ">"
                         + " at line " + line(ctx.start) + ", col " + col(ctx.start));
             }
         }
@@ -282,8 +305,14 @@ public class HtmlAstBuilder extends HtmlCssParserBaseVisitor<HtmlNode> {
         try {
             CharStream cs = CharStreams.fromString(styleNode.getRawCss());
             CssLexer cssLexer = new CssLexer(cs);
+            cssLexer.removeErrorListeners();
+            cssLexer.addErrorListener(new CssErrorListener(
+                    errorStream, line(ctx.start)));
             CommonTokenStream cssTokens = new CommonTokenStream(cssLexer);
             CssParser cssParser = new CssParser(cssTokens);
+            cssParser.removeErrorListeners();
+            cssParser.addErrorListener(new CssErrorListener(
+                    errorStream, line(ctx.start)));
 
             ParseTree cssTree = cssParser.stylesheet();
 
@@ -292,12 +321,48 @@ public class HtmlAstBuilder extends HtmlCssParserBaseVisitor<HtmlNode> {
 
             styleNode.setCssAst(cssAst);
         } catch (Exception ex) {
-            System.err.println("CSS parsing failed inside <style> at line " + line(ctx.start));
-            ex.printStackTrace();
+            errorStream.println("[CSS Error] <style>:" + line(ctx.start));
+            errorStream.println("  CSS parsing failed: " + safeMessage(ex));
+            if (debug) {
+                ex.printStackTrace(errorStream);
+            }
 
         }
 
         return styleNode;
+    }
+
+    private static String safeMessage(Throwable failure) {
+        String message = failure.getMessage();
+        return message == null || message.trim().isEmpty()
+                ? failure.getClass().getSimpleName()
+                : message;
+    }
+
+    private static final class CssErrorListener extends BaseErrorListener {
+        private final PrintStream errorStream;
+        private final int styleLine;
+
+        private CssErrorListener(PrintStream errorStream, int styleLine) {
+            this.errorStream = errorStream;
+            this.styleLine = styleLine;
+        }
+
+        @Override
+        public void syntaxError(
+                Recognizer<?, ?> recognizer,
+                Object offendingSymbol,
+                int line,
+                int charPositionInLine,
+                String message,
+                RecognitionException failure) {
+            int documentLine = styleLine > 0 && line > 0
+                    ? styleLine + line - 1
+                    : Math.max(line, 0);
+            errorStream.println("[CSS Error] <style>:" + documentLine + ":"
+                    + Math.max(charPositionInLine, 0));
+            errorStream.println("  Syntax error: " + message);
+        }
     }
 
 
@@ -319,8 +384,6 @@ public class HtmlAstBuilder extends HtmlCssParserBaseVisitor<HtmlNode> {
         return new JinjaStatementNode(st.trim(), line(ctx.start), col(ctx.start));
     }
 }
-
-
 
 
 

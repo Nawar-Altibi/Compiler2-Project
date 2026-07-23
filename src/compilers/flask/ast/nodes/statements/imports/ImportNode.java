@@ -33,7 +33,11 @@ public class ImportNode extends Statement {
     }
 
     public String getEffectiveName() {
-        return hasAlias() ? asName : moduleName;
+        if (hasAlias()) {
+            return asName;
+        }
+        int dot = moduleName.indexOf('.');
+        return dot < 0 ? moduleName : moduleName.substring(0, dot);
     }
 
     @Override
@@ -56,4 +60,3 @@ public class ImportNode extends Statement {
         return sb.toString();
     }
 }
-

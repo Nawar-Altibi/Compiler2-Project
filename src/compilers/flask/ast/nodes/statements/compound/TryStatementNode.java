@@ -4,6 +4,7 @@ import compilers.flask.ast.nodes.*;
 import compilers.flask.ast.nodes.helpers.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class TryStatementNode extends Statement {
@@ -15,13 +16,19 @@ public class TryStatementNode extends Statement {
 
     public TryStatementNode(List<Statement> tryBody, List<ExceptClause> exceptClauses,
                             List<Statement> elseBody, List<Statement> finallyBody) {
-        this.tryBody = tryBody;
-        this.exceptClauses = exceptClauses != null ? exceptClauses : new ArrayList<>();
-        this.elseBody = elseBody;
-        this.finallyBody = finallyBody;
+        this.tryBody = Collections.unmodifiableList(new ArrayList<>(tryBody));
+        this.exceptClauses = Collections.unmodifiableList(exceptClauses != null
+                ? new ArrayList<>(exceptClauses)
+                : new ArrayList<ExceptClause>());
+        this.elseBody = elseBody == null
+                ? null
+                : Collections.unmodifiableList(new ArrayList<>(elseBody));
+        this.finallyBody = finallyBody == null
+                ? null
+                : Collections.unmodifiableList(new ArrayList<>(finallyBody));
 
         // Set parents for try body
-        for (Statement stmt : tryBody) {
+        for (Statement stmt : this.tryBody) {
             stmt.setParent(this);
         }
 
@@ -36,15 +43,15 @@ public class TryStatementNode extends Statement {
         }
 
         // Set parents for else body
-        if (elseBody != null) {
-            for (Statement stmt : elseBody) {
+        if (this.elseBody != null) {
+            for (Statement stmt : this.elseBody) {
                 stmt.setParent(this);
             }
         }
 
         // Set parents for finally body
-        if (finallyBody != null) {
-            for (Statement stmt : finallyBody) {
+        if (this.finallyBody != null) {
+            for (Statement stmt : this.finallyBody) {
                 stmt.setParent(this);
             }
         }
@@ -120,4 +127,3 @@ public class TryStatementNode extends Statement {
         return sb.toString();
     }
 }
-

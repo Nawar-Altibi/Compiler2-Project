@@ -3,6 +3,8 @@ import compilers.flask.Visitor.ASTVisitor;
 import compilers.flask.ast.nodes.*;
 import compilers.flask.ast.nodes.helpers.*;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class ForStatementNode extends Statement {
@@ -16,17 +18,19 @@ public class ForStatementNode extends Statement {
                             List<Statement> body, List<Statement> elseBody) {
         this.target = target;
         this.iterable = iterable;
-        this.body = body;
-        this.elseBody = elseBody;
+        this.body = Collections.unmodifiableList(new ArrayList<>(body));
+        this.elseBody = elseBody == null
+                ? null
+                : Collections.unmodifiableList(new ArrayList<>(elseBody));
 
         // Set parents
         target.setParent(this);
         iterable.setParent(this);
-        for (Statement stmt : body) {
+        for (Statement stmt : this.body) {
             stmt.setParent(this);
         }
-        if (elseBody != null) {
-            for (Statement stmt : elseBody) {
+        if (this.elseBody != null) {
+            for (Statement stmt : this.elseBody) {
                 stmt.setParent(this);
             }
         }
@@ -74,4 +78,3 @@ public class ForStatementNode extends Statement {
         return "For" + (hasElse() ? " (with else)" : "");
     }
 }
-

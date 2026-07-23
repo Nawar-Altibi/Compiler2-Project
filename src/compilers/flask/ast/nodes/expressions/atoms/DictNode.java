@@ -5,6 +5,7 @@ import compilers.flask.ast.nodes.*;
 import compilers.flask.ast.nodes.helpers.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class DictNode extends Expression {
@@ -15,10 +16,16 @@ public class DictNode extends Expression {
     public static class DictItem {
         private final Expression key;
         private final Expression value;
+        private final SourceSpan span;
 
         public DictItem(Expression key, Expression value) {
+            this(key, value, SourceSpan.UNKNOWN);
+        }
+
+        public DictItem(Expression key, Expression value, SourceSpan span) {
             this.key = key;
             this.value = value;
+            this.span = span == null ? SourceSpan.UNKNOWN : span;
         }
 
         public Expression getKey() {
@@ -27,6 +34,10 @@ public class DictNode extends Expression {
 
         public Expression getValue() {
             return value;
+        }
+
+        public SourceSpan getSpan() {
+            return span;
         }
 
         @Override
@@ -38,9 +49,9 @@ public class DictNode extends Expression {
     private final List<DictItem> items;
 
     public DictNode(List<DictItem> items) {
-        this.items = items;
+        this.items = Collections.unmodifiableList(new ArrayList<>(items));
         // Set parent for all keys and values
-        for (DictItem item : items) {
+        for (DictItem item : this.items) {
             item.key.setParent(this);
             item.value.setParent(this);
         }
@@ -62,15 +73,6 @@ public class DictNode extends Expression {
 
     public int size() {
         return items.size();
-    }
-
-    /**
-     * Add a key-value pair (useful for construction)
-     */
-    public void addItem(Expression key, Expression value) {
-        items.add(new DictItem(key, value));
-        key.setParent(this);
-        value.setParent(this);
     }
 
     @Override

@@ -2,17 +2,29 @@ package compilers.html_css.Visitor;
 
 import compilers.html_css.ast.*;
 
+import java.io.PrintStream;
+import java.util.Objects;
+
 public class CssPrintVisitor implements CssVisitor {
 
+    private final PrintStream out;
     private int indent = 0;
 
+    public CssPrintVisitor() {
+        this(System.out);
+    }
+
+    public CssPrintVisitor(PrintStream out) {
+        this.out = Objects.requireNonNull(out, "out");
+    }
+
     private void ind() {
-        for (int i = 0; i < indent; i++) System.out.print("  ");
+        for (int i = 0; i < indent; i++) out.print("  ");
     }
 
     private void printNode(CssNode n, String label) {
         ind();
-        System.out.println(label + " (line=" + n.line + ", col=" + n.col + ")");
+        out.println(label + " (line=" + n.line + ", col=" + n.col + ")");
     }
 
     @Override
@@ -82,10 +94,10 @@ public class CssPrintVisitor implements CssVisitor {
                 ((SimpleSelectorSequenceNode) p).accept(this);
             } else if (p instanceof Combinator) {
                 ind();
-                System.out.println("Combinator: " + p);
+                out.println("Combinator: " + p);
             } else if (p instanceof String) {
                 ind();
-                System.out.println("Combinator: " + p);
+                out.println("Combinator: " + p);
             }
         }
         indent--;
@@ -139,7 +151,7 @@ public class CssPrintVisitor implements CssVisitor {
             ExprNode e = n.groups.get(i);
             if (e == null) continue;
             ind();
-            System.out.println("Group[" + i + "]:");
+            out.println("Group[" + i + "]:");
             indent++;
             e.accept(this);
             indent--;
@@ -165,7 +177,7 @@ public class CssPrintVisitor implements CssVisitor {
             if (i < n.operators.size()) sb.append(" ").append(n.operators.get(i)).append(" ");
         }
 
-        System.out.println("Text: " + sb);
+        out.println("Text: " + sb);
 
         for (TermNode t : n.terms) {
             if (t != null) t.accept(this);
@@ -191,7 +203,7 @@ public class CssPrintVisitor implements CssVisitor {
         if ("FUNC".equals(kind) && n.funcArgs != null) {
             indent++;
             ind();
-            System.out.println("Args:");
+            out.println("Args:");
             indent++;
             n.funcArgs.accept(this);
             indent -= 2;
@@ -206,7 +218,6 @@ public class CssPrintVisitor implements CssVisitor {
 
 
 }
-
 
 
 

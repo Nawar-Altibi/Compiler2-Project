@@ -4,7 +4,7 @@ import compilers.flask.ast.nodes.ASTNode;
 import compilers.flask.ast.nodes.statements.compound.FunctionDefNode;
 import compilers.flask.ast.nodes.statements.compound.ClassDefNode;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -31,7 +31,7 @@ public class SymbolEntry {
     public SymbolEntry(String name, SymbolKind kind) {
         this.name = name;
         this.kind = kind;
-        this.attributes = new HashMap<>();
+        this.attributes = new LinkedHashMap<>();
         this.type = SymbolType.UNKNOWN;
         this.isDefined = false;
         this.isUsed = false;
@@ -86,6 +86,11 @@ public class SymbolEntry {
         }
     }
 
+    /** Clears stale function metadata when the name is rebound. */
+    public void clearFunctionNode() {
+        this.functionNode = null;
+    }
+
     public ClassDefNode getClassNode() {
         return classNode;
     }
@@ -97,6 +102,11 @@ public class SymbolEntry {
             this.line = classNode.getLine();
             this.column = classNode.getColumn();
         }
+    }
+
+    /** Clears stale class metadata when the name is rebound. */
+    public void clearClassNode() {
+        this.classNode = null;
     }
 
     public int getLine() {
@@ -155,8 +165,12 @@ public class SymbolEntry {
         return attributes.containsKey(key);
     }
 
+    public Object removeAttribute(String key) {
+        return attributes.remove(key);
+    }
+
     public Map<String, Object> getAttributes() {
-        return new HashMap<>(attributes);
+        return new LinkedHashMap<>(attributes);
     }
 
     // ========================================
@@ -192,4 +206,3 @@ public class SymbolEntry {
         ATTRIBUTE      // attribute في class
     }
 }
-

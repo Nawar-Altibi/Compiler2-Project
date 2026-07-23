@@ -3,6 +3,7 @@ import compilers.flask.Visitor.ASTVisitor;
 import compilers.flask.ast.nodes.*;
 import compilers.flask.ast.nodes.helpers.*;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -12,16 +13,16 @@ public class WithStatementNode extends Statement {
     private final List<Statement> body;  // With body
 
     public WithStatementNode(List<WithItem> items, List<Statement> body) {
-        this.items = items;
-        this.body = body;
+        this.items = Collections.unmodifiableList(new ArrayList<>(items));
+        this.body = Collections.unmodifiableList(new ArrayList<>(body));
 
         // Set parents for body statements
-        for (Statement stmt : body) {
+        for (Statement stmt : this.body) {
             stmt.setParent(this);
         }
 
         // Set parents for context expressions and as names
-        for (WithItem item : items) {
+        for (WithItem item : this.items) {
             item.getContextExpr().setParent(this);
             if (item.getAsName() != null) {
                 item.getAsName().setParent(this);
@@ -67,4 +68,3 @@ public class WithStatementNode extends Statement {
         return "With (" + items.size() + " context" + (items.size() > 1 ? "s" : "") + ")";
     }
 }
-

@@ -3,6 +3,8 @@ import compilers.flask.Visitor.ASTVisitor;
 import compilers.flask.ast.nodes.*;
 import compilers.flask.ast.nodes.helpers.*;
 
+import java.math.BigInteger;
+
 public class LiteralNode extends Expression {
 
     public enum LiteralType {
@@ -19,6 +21,18 @@ public class LiteralNode extends Expression {
 
     // Convenience constructors
     public static LiteralNode integer(int value) {
+        return new LiteralNode(value, LiteralType.INTEGER);
+    }
+
+    /**
+     * Python integers are arbitrary precision.  Keep the existing int factory
+     * for source compatibility and use this overload only when the value no
+     * longer fits in a Java int.
+     */
+    public static LiteralNode integer(BigInteger value) {
+        if (value == null) {
+            throw new IllegalArgumentException("Integer literal value cannot be null");
+        }
         return new LiteralNode(value, LiteralType.INTEGER);
     }
 
@@ -73,4 +87,3 @@ public class LiteralNode extends Expression {
         return "Literal(" + type + ", " + value + ")";
     }
 }
-

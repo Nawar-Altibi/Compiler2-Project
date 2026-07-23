@@ -3,6 +3,7 @@ import compilers.flask.Visitor.ASTVisitor;
 import compilers.flask.ast.nodes.*;
 import compilers.flask.ast.nodes.helpers.*;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -11,7 +12,7 @@ public class GlobalNode extends Statement {
     private final List<String> names;  // Variable names
 
     public GlobalNode(List<String> names) {
-        this.names = names;
+        this.names = Collections.unmodifiableList(new ArrayList<>(names));
     }
 
     // Constructor for single name
@@ -38,4 +39,3 @@ public class GlobalNode extends Statement {
         return "Global(" + String.join(", ", names) + ")";
     }
 }
-

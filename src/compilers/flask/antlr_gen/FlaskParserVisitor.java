@@ -1,6 +1,5 @@
-// Generated from /home/ghaith/IdeaProjects/Compiler2-Project/src/compilers/flask/antlr_gen/FlaskParser.g4 by ANTLR 4.13.1
+// Generated from FlaskParser.g4 by ANTLR 4.13.1
 package compilers.flask.antlr_gen;
-
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
 /**
@@ -234,6 +233,12 @@ public interface FlaskParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitImportList(FlaskParser.ImportListContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link FlaskParser#importItem}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitImportItem(FlaskParser.ImportItemContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link FlaskParser#dottedName}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -311,6 +316,12 @@ public interface FlaskParserVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitAtom(FlaskParser.AtomContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link FlaskParser#parenthesized}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitParenthesized(FlaskParser.ParenthesizedContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link FlaskParser#trailer}.
 	 * @param ctx the parse tree

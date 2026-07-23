@@ -15,13 +15,23 @@ public abstract class FStringPart {
     }
     
     private final PartType type;
-    
+    private final SourceSpan span;
+
     protected FStringPart(PartType type) {
+        this(type, SourceSpan.UNKNOWN);
+    }
+
+    protected FStringPart(PartType type, SourceSpan span) {
         this.type = type;
+        this.span = span == null ? SourceSpan.UNKNOWN : span;
     }
     
     public PartType getType() {
         return type;
+    }
+
+    public SourceSpan getSpan() {
+        return span;
     }
     
     /**
@@ -31,7 +41,11 @@ public abstract class FStringPart {
         private final String value;
         
         public StringPart(String value) {
-            super(PartType.STRING);
+            this(value, SourceSpan.UNKNOWN);
+        }
+
+        public StringPart(String value, SourceSpan span) {
+            super(PartType.STRING, span);
             this.value = value;
         }
         
@@ -47,7 +61,11 @@ public abstract class FStringPart {
         private final Expression expression;
         
         public ExpressionPart(Expression expression) {
-            super(PartType.EXPRESSION);
+            this(expression, SourceSpan.UNKNOWN);
+        }
+
+        public ExpressionPart(Expression expression, SourceSpan span) {
+            super(PartType.EXPRESSION, span);
             this.expression = expression;
             if (expression != null) {
                 expression.setParent(null); // Will be set by FStringNode
@@ -59,5 +77,4 @@ public abstract class FStringPart {
         }
     }
 }
-
 

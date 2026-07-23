@@ -1,4 +1,5 @@
 out/
+.tmp/
 *.iml
 .idea/
 .DS_Store
@@ -6,3 +7,11 @@ out/
 
 gen/
 lib/
+flow.html
+\ARCHITECTURE_REVIEW.md
+\architecture.html
+FLASK_BYTECODE_PLAN.md
+FLASK_BYTECODE_PROGRESS.md
+FLASK_SEMANTIC_PLAN.md
+\GENERATION_REFACTOR_PLAN.md
+\README.md

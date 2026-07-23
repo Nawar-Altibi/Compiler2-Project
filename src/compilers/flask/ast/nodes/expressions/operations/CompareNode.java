@@ -3,6 +3,7 @@ import compilers.flask.Visitor.ASTVisitor;
 import compilers.flask.ast.nodes.*;
 import compilers.flask.ast.nodes.helpers.*;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -43,17 +44,17 @@ public class CompareNode extends Expression {
 
     public CompareNode(Expression left, List<CompareOp> operators, List<Expression> comparators) {
         this.left = left;
-        this.operators = operators;
-        this.comparators = comparators;
+        this.operators = Collections.unmodifiableList(new ArrayList<>(operators));
+        this.comparators = Collections.unmodifiableList(new ArrayList<>(comparators));
 
         // Set parent
         left.setParent(this);
-        for (Expression comparator : comparators) {
+        for (Expression comparator : this.comparators) {
             comparator.setParent(this);
         }
 
         // Validation: operators and comparators must have same size
-        if (operators.size() != comparators.size()) {
+        if (this.operators.size() != this.comparators.size()) {
             throw new IllegalArgumentException(
                     "CompareNode: operators count must equal comparators count. " +
                             "Got " + operators.size() + " operators and " + comparators.size() + " comparators"
@@ -118,4 +119,3 @@ public class CompareNode extends Expression {
         }
     }
 }
-

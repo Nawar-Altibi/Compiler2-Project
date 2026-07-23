@@ -1,6 +1,5 @@
-// Generated from /home/ghaith/IdeaProjects/Compiler2-Project/src/compilers/flask/antlr_gen/FlaskParser.g4 by ANTLR 4.13.1
+// Generated from FlaskParser.g4 by ANTLR 4.13.1
 package compilers.flask.antlr_gen;
-
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
 /**
@@ -379,6 +378,16 @@ public interface FlaskParserListener extends ParseTreeListener {
 	 */
 	void exitImportList(FlaskParser.ImportListContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link FlaskParser#importItem}.
+	 * @param ctx the parse tree
+	 */
+	void enterImportItem(FlaskParser.ImportItemContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FlaskParser#importItem}.
+	 * @param ctx the parse tree
+	 */
+	void exitImportItem(FlaskParser.ImportItemContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link FlaskParser#dottedName}.
 	 * @param ctx the parse tree
 	 */
@@ -508,6 +517,16 @@ public interface FlaskParserListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitAtom(FlaskParser.AtomContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link FlaskParser#parenthesized}.
+	 * @param ctx the parse tree
+	 */
+	void enterParenthesized(FlaskParser.ParenthesizedContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FlaskParser#parenthesized}.
+	 * @param ctx the parse tree
+	 */
+	void exitParenthesized(FlaskParser.ParenthesizedContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link FlaskParser#trailer}.
 	 * @param ctx the parse tree

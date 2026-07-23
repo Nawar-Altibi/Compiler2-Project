@@ -4,6 +4,7 @@ import compilers.flask.ast.nodes.*;
 import compilers.flask.ast.nodes.helpers.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class FromImportNode extends Statement {
@@ -14,10 +15,29 @@ public class FromImportNode extends Statement {
     public static class ImportItem {
         private final String name;    // Item name
         private final String asName;  // Optional alias (null if not present)
+        private final SourceSpan span;
+        private final SourceSpan nameSpan;
+        private final SourceSpan aliasSpan;
 
         public ImportItem(String name, String asName) {
+            this(name, asName, SourceSpan.UNKNOWN,
+                    SourceSpan.UNKNOWN, SourceSpan.UNKNOWN);
+        }
+
+        public ImportItem(
+                String name,
+                String asName,
+                SourceSpan span,
+                SourceSpan nameSpan,
+                SourceSpan aliasSpan) {
+            if (name == null || name.isEmpty()) {
+                throw new IllegalArgumentException("Imported name cannot be empty");
+            }
             this.name = name;
             this.asName = asName;
+            this.span = span == null ? SourceSpan.UNKNOWN : span;
+            this.nameSpan = nameSpan == null ? SourceSpan.UNKNOWN : nameSpan;
+            this.aliasSpan = aliasSpan == null ? SourceSpan.UNKNOWN : aliasSpan;
         }
 
         public ImportItem(String name) {
@@ -30,6 +50,18 @@ public class FromImportNode extends Statement {
 
         public String getAsName() {
             return asName;
+        }
+
+        public SourceSpan getSpan() {
+            return span;
+        }
+
+        public SourceSpan getNameSpan() {
+            return nameSpan;
+        }
+
+        public SourceSpan getAliasSpan() {
+            return aliasSpan;
         }
 
         public boolean hasAlias() {
@@ -52,7 +84,7 @@ public class FromImportNode extends Statement {
 
     public FromImportNode(String moduleName, List<ImportItem> items, boolean importAll) {
         this.moduleName = moduleName;
-        this.items = items != null ? items : new ArrayList<>();
+        this.items = items != null ? new ArrayList<>(items) : new ArrayList<>();
         this.importAll = importAll;
     }
 
@@ -86,7 +118,7 @@ public class FromImportNode extends Statement {
     }
 
     public List<ImportItem> getItems() {
-        return items;
+        return Collections.unmodifiableList(items);
     }
 
     public boolean isImportAll() {
@@ -129,4 +161,3 @@ public class FromImportNode extends Statement {
         return sb.toString();
     }
 }
-

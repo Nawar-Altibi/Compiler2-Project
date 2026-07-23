@@ -1,4 +1,5 @@
 package compilers.flask.ast.nodes;
+import compilers.flask.SymbolTable.SymbolTable;
 import compilers.flask.Visitor.ASTVisitor;
 import compilers.flask.ast.nodes.*;
 import compilers.flask.ast.nodes.helpers.*;
@@ -9,25 +10,56 @@ import compilers.flask.ast.nodes.helpers.*;
  */
 public abstract class ASTNode {
 
-    // Source location information
-    private int line;
-    private int column;
+    // Source location information. SourceSpan is authoritative; the legacy
+    // line/column API remains as a compatibility view of its start position.
+    private SourceSpan sourceSpan = SourceSpan.UNKNOWN;
     private ASTNode parent;
+    private SymbolTable scope;
 
     public int getLine() {
-        return line;
+        return sourceSpan.getStartLine();
     }
 
     public void setLine(int line) {
-        this.line = line;
+        if (line < 0) {
+            throw new IllegalArgumentException("Source line cannot be negative");
+        }
+        if (line == 0) {
+            sourceSpan = SourceSpan.UNKNOWN;
+            return;
+        }
+        int column = sourceSpan.isKnown() ? sourceSpan.getStartColumn() : 0;
+        sourceSpan = SourceSpan.point(sourceSpan.getSourceFile(), line, column);
     }
 
     public int getColumn() {
-        return column;
+        return sourceSpan.getStartColumn();
     }
 
     public void setColumn(int column) {
-        this.column = column;
+        if (column < 0) {
+            throw new IllegalArgumentException("Source column cannot be negative");
+        }
+        int line = sourceSpan.isKnown() ? sourceSpan.getStartLine() : 1;
+        sourceSpan = SourceSpan.point(sourceSpan.getSourceFile(), line, column);
+    }
+
+    public SourceSpan getSourceSpan() {
+        return sourceSpan;
+    }
+
+    /** Short alias useful to source-map consumers. */
+    public SourceSpan getSpan() {
+        return sourceSpan;
+    }
+
+    public void setSourceSpan(SourceSpan sourceSpan) {
+        this.sourceSpan = sourceSpan == null ? SourceSpan.UNKNOWN : sourceSpan;
+    }
+
+    /** Short alias useful to AST builders. */
+    public void setSpan(SourceSpan sourceSpan) {
+        setSourceSpan(sourceSpan);
     }
 
     public ASTNode getParent() {
@@ -36,6 +68,14 @@ public abstract class ASTNode {
 
     public void setParent(ASTNode parent) {
         this.parent = parent;
+    }
+
+    public SymbolTable getScope() {
+        return scope;
+    }
+
+    public void setScope(SymbolTable scope) {
+        this.scope = scope;
     }
 
     /**

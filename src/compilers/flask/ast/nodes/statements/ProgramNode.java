@@ -4,27 +4,23 @@ import compilers.flask.ast.nodes.*;
 import compilers.flask.ast.nodes.helpers.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class ProgramNode extends ASTNode {
 
-    private List<Statement> statements;
+    private final List<Statement> statements;
 
     public ProgramNode() {
-        this.statements = new ArrayList<>();
+        this(Collections.<Statement>emptyList());
     }
 
     public ProgramNode(List<Statement> statements) {
-        this.statements = statements;
+        this.statements = Collections.unmodifiableList(new ArrayList<>(statements));
         // Set parent for all statements
         for (Statement stmt : statements) {
             stmt.setParent(this);
         }
-    }
-
-    public void addStatement(Statement stmt) {
-        this.statements.add(stmt);
-        stmt.setParent(this);
     }
 
     public List<Statement> getStatements() {
@@ -41,4 +37,3 @@ public class ProgramNode extends ASTNode {
         return "Program";
     }
 }
-

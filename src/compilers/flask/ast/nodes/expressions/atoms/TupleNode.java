@@ -4,6 +4,7 @@ import compilers.flask.ast.nodes.*;
 import compilers.flask.ast.nodes.helpers.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class TupleNode extends Expression {
@@ -12,10 +13,10 @@ public class TupleNode extends Expression {
     private final boolean hasParentheses;  // True if explicitly parenthesized
 
     public TupleNode(List<Expression> elements, boolean hasParentheses) {
-        this.elements = elements;
+        this.elements = new ArrayList<>(elements);
         this.hasParentheses = hasParentheses;
         // Set parent for all elements
-        for (Expression elem : elements) {
+        for (Expression elem : this.elements) {
             elem.setParent(this);
         }
     }
@@ -31,7 +32,7 @@ public class TupleNode extends Expression {
     }
 
     public List<Expression> getElements() {
-        return elements;
+        return Collections.unmodifiableList(elements);
     }
 
     public boolean hasParentheses() {
@@ -77,4 +78,3 @@ public class TupleNode extends Expression {
         return sb.toString();
     }
 }
-

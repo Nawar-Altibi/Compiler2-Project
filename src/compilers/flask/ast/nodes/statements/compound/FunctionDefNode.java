@@ -11,21 +11,48 @@ public class FunctionDefNode extends Statement {
     private final String name;
     private final List<Parameter> parameters;
     private final List<Statement> body;
-    private final List<Decorator> decorators;
+    private final List<DecoratorNode> decorators;
     private final Expression returnType;  // Optional return type hint
+    private final SourceSpan nameSpan;
 
     public FunctionDefNode(String name, List<Parameter> parameters,
-                           List<Statement> body, List<Decorator> decorators,
+                           List<Statement> body,
+                           List<? extends DecoratorNode> decorators,
                            Expression returnType) {
+        this(name, parameters, body, decorators, returnType, SourceSpan.UNKNOWN);
+    }
+
+    public FunctionDefNode(String name, List<Parameter> parameters,
+                           List<Statement> body,
+                           List<? extends DecoratorNode> decorators,
+                           Expression returnType,
+                           SourceSpan nameSpan) {
+        if (name == null || name.isEmpty()) {
+            throw new IllegalArgumentException("Function name cannot be empty");
+        }
         this.name = name;
-        this.parameters = parameters;
-        this.body = body;
-        this.decorators = decorators;
+        this.parameters = new ArrayList<>(parameters);
+        this.body = new ArrayList<>(body);
+        this.decorators = new ArrayList<>(decorators);
         this.returnType = returnType;
+        this.nameSpan = nameSpan == null ? SourceSpan.UNKNOWN : nameSpan;
 
         // Set parent for all statements in body
-        for (Statement stmt : body) {
+        for (Statement stmt : this.body) {
             stmt.setParent(this);
+        }
+
+        for (Parameter parameter : this.parameters) {
+            if (parameter.hasDefault()) {
+                parameter.getDefaultValue().setParent(this);
+            }
+            if (parameter.hasTypeHint()) {
+                parameter.getTypeHint().setParent(this);
+            }
+        }
+
+        for (DecoratorNode decorator : this.decorators) {
+            decorator.getExpression().setParent(this);
         }
 
         // Set parent for return type if present
@@ -36,7 +63,8 @@ public class FunctionDefNode extends Statement {
 
     // Constructor without return type (most common)
     public FunctionDefNode(String name, List<Parameter> parameters,
-                           List<Statement> body, List<Decorator> decorators) {
+                           List<Statement> body,
+                           List<? extends DecoratorNode> decorators) {
         this(name, parameters, body, decorators, null);
     }
 
@@ -51,19 +79,23 @@ public class FunctionDefNode extends Statement {
     }
 
     public List<Parameter> getParameters() {
-        return parameters;
+        return java.util.Collections.unmodifiableList(parameters);
     }
 
     public List<Statement> getBody() {
-        return body;
+        return java.util.Collections.unmodifiableList(body);
     }
 
-    public List<Decorator> getDecorators() {
-        return decorators;
+    public List<DecoratorNode> getDecorators() {
+        return java.util.Collections.unmodifiableList(decorators);
     }
 
     public Expression getReturnType() {
         return returnType;
+    }
+
+    public SourceSpan getNameSpan() {
+        return nameSpan;
     }
 
     // Helper methods
@@ -105,4 +137,3 @@ public class FunctionDefNode extends Statement {
         return sb.toString();
     }
 }
-
