@@ -1,22 +1,17 @@
 package Main;
 
 import compilers.diagnostics.Diagnostic;
-import compilers.diagnostics.CompilerPhase;
-import compilers.diagnostics.Diagnostics;
+import compilers.diagnostics.DiagnosticReporter;
+import compilers.flask.SymbolTable.SymbolTableBuilder;
 import compilers.flask.Visitor.ASTPrinter;
-import compilers.flask.codegen.disasm.Disassembler;
-import compilers.flask.pipeline.FlaskCompilationResult;
-import compilers.flask.pipeline.FlaskCompilerPipeline;
-import compilers.flask.vm.BytecodeVM;
-import compilers.flask.vm.ExecutionLimits;
-import compilers.flask.vm.VmCapabilities;
-import compilers.flask.vm.VmResult;
-import compilers.flask.vm.VmRuntimeException;
-import compilers.flask.vm.flask.FlaskResponseNormalizer;
-import compilers.flask.vm.flask.PyFlaskApp;
-import compilers.flask.vm.flask.PyResponse;
-import compilers.flask.vm.values.PyDict;
-import compilers.flask.vm.values.PyValue;
+import compilers.flask.antlr_gen.FlaskLexer;
+import compilers.flask.antlr_gen.FlaskParser;
+import compilers.flask.ast.builder.ASTBuilder;
+import compilers.flask.ast.nodes.ASTNode;
+import compilers.flask.ast.nodes.statements.ProgramNode;
+import compilers.flask.semantic.SemanticAnalyzer;
+import compilers.flask.semantic.validation.AstStructuralValidator;
+import compilers.flask.semantic.validation.ScopeRuleChecker;
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
@@ -35,19 +30,23 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 
-/** Thin, deterministic command-line boundary for the two compiler frontends. */
+/**
+ * Thin, deterministic command-line boundary for the two compiler frontends.
+ *
+ * <p>Python/Flask inputs run the analysis front end (parse, structural
+ * validation, symbol table, scope rules, semantic analysis). HTML/Jinja/CSS
+ * inputs run the template front end. The generation pipeline (context
+ * extraction + Jinja rendering + output/report writing) is wired here in
+ * Phase 5 of the refactor plan.</p>
+ */
 public final class UnifiedMain {
     private static final String USAGE = String.join(System.lineSeparator(),
-            "Usage: java Main.UnifiedMain <file.py|file.html> [options]",
+            "Usage: java Main.UnifiedMain <file.py|file.html|file.jinja> [options]",
             "Options:",
-            "  --ast",
-            "  --symbols",
-            "  --diagnostics",
-            "  --disassemble                 Python/Flask only",
-            "  --run-bytecode                Python/Flask only",
-            "  --invoke-route METHOD PATH    Python/Flask only",
-            "  --allow-fs-read ROOT          Python/Flask only; read-only",
-            "  --debug");
+            "  --ast          print the AST",
+            "  --symbols      print the symbol table",
+            "  --diagnostics  print all diagnostics",
+            "  --debug        print Java stack traces on internal failures");
 
     private UnifiedMain() {
     }
@@ -56,16 +55,12 @@ public final class UnifiedMain {
         System.exit(run(args, System.out, System.err));
     }
 
-    /**
-     * Testable CLI entry point. It owns presentation and exit-code mapping,
-     * while all reusable Flask compilation remains in {@link FlaskCompilerPipeline}.
-     */
+    /** Testable CLI entry point; owns presentation and exit-code mapping only. */
     public static int run(String[] args, PrintStream out, PrintStream err) {
         Objects.requireNonNull(out, "out");
         Objects.requireNonNull(err, "err");
         boolean debugRequested = args != null
                 && Arrays.asList(args).contains("--debug");
-        String attemptedSource = sourceLabel(args);
         try {
             Options options = Options.parse(args);
             Path source = options.source.toAbsolutePath().normalize();
@@ -76,10 +71,9 @@ public final class UnifiedMain {
 
             String fileName = source.getFileName().toString().toLowerCase(Locale.ROOT);
             if (fileName.endsWith(".py")) {
-                return runFlaskCompiler(source, options, out, err);
+                return runFlaskFrontEnd(source, options, out, err);
             }
-            if (fileName.endsWith(".html")) {
-                options.rejectPythonOnlyHtmlOptions();
+            if (fileName.endsWith(".html") || fileName.endsWith(".jinja")) {
                 return runHtmlCssCompiler(source, options, out, err);
             }
             throw new CliFailure("Unsupported file extension: " + source.getFileName());
@@ -88,13 +82,7 @@ public final class UnifiedMain {
             err.println(USAGE);
             return 3;
         } catch (Exception failure) {
-            Diagnostic diagnostic = Diagnostics.internalCompilerError(
-                    CompilerPhase.PIPELINE,
-                    "Unexpected internal compiler failure: " + safeMessage(failure),
-                    0,
-                    0,
-                    attemptedSource);
-            err.println(diagnostic);
+            err.println("Internal error: " + safeMessage(failure));
             if (debugRequested) {
                 failure.printStackTrace(err);
             }
@@ -102,102 +90,72 @@ public final class UnifiedMain {
         }
     }
 
-    private static int runFlaskCompiler(
+    /**
+     * Runs the complete Python/Flask analysis front end with the frozen gate
+     * order: parse, structural validation, symbol table, scope rules,
+     * semantic analysis. Returns 1 on any source error, 0 when clean.
+     */
+    private static int runFlaskFrontEnd(
             Path source,
             Options options,
             PrintStream out,
-            PrintStream err) {
-        VmCapabilities capabilities = VmCapabilities.NONE;
-        if (options.fileSystemRoot != null) {
-            try {
-                capabilities = VmCapabilities.rootedFileSystemRead(options.fileSystemRoot);
-            } catch (IllegalArgumentException invalidRoot) {
-                throw new CliFailure("Invalid filesystem read root: "
-                        + options.fileSystemRoot, invalidRoot);
-            }
-        }
+            PrintStream err) throws Exception {
+        String sourceLabel = source.getFileName().toString();
+        AntlrErrorCollector syntaxErrors = new AntlrErrorCollector(sourceLabel, err);
 
-        FlaskCompilationResult compilation =
-                new FlaskCompilerPipeline().compile(source, "__main__");
-        boolean teachingView = !options.hasSelection;
-
-        if ((teachingView || options.ast) && compilation.hasAst()) {
-            ASTPrinter printer = new ASTPrinter();
-            printer.visitProgram(compilation.getAst());
-            out.println("====== Flask AST ======");
-            out.print(printer.getOutput());
-        }
-        if ((teachingView || options.symbols) && compilation.hasSymbolTable()) {
-            out.println("====== Flask SYMBOL TABLE ======");
-            out.print(compilation.getSymbolTable().format());
-        }
-        printDiagnostics(compilation, teachingView || options.diagnostics, err);
-
-        if (compilation.hasInternalFailure()) {
-            if (options.debug) {
-                compilation.getInternalFailure().printStackTrace(err);
-            }
-            return 3;
-        }
-        if (compilation.getReporter().hasErrors()) {
+        CharStream input = CharStreams.fromPath(source);
+        FlaskLexer lexer = new FlaskLexer(input);
+        lexer.removeErrorListeners();
+        lexer.addErrorListener(syntaxErrors);
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        FlaskParser parser = new FlaskParser(tokens);
+        parser.removeErrorListeners();
+        parser.addErrorListener(syntaxErrors);
+        ParseTree tree = parser.program();
+        if (syntaxErrors.hasErrors()) {
             return 1;
         }
 
-        if (options.disassemble) {
-            out.print(new Disassembler().disassemble(
-                    compilation.requireVerifiedModule()));
+        ASTNode root = new ASTBuilder(sourceLabel).visit(tree);
+        if (!(root instanceof ProgramNode)) {
+            err.println("[AST Error] " + sourceLabel);
+            err.println("  Python AST builder produced no program");
+            return 1;
         }
+        ProgramNode program = (ProgramNode) root;
 
-        if (!options.runBytecode && options.routeMethod == null) {
-            return 0;
-        }
+        DiagnosticReporter reporter = new DiagnosticReporter();
+        boolean structurallyValid =
+                new AstStructuralValidator(reporter, sourceLabel).validate(program);
+        if (structurallyValid) {
+            SymbolTableBuilder symbols = new SymbolTableBuilder(reporter, sourceLabel);
+            program.accept(symbols);
+            new ScopeRuleChecker(symbols.getSymbolTable(), reporter, sourceLabel)
+                    .check(program);
+            new SemanticAnalyzer(symbols.getSymbolTable(), sourceLabel, reporter)
+                    .analyze(program);
 
-        BytecodeVM vm = new BytecodeVM(ExecutionLimits.DEFAULT, capabilities);
-        VmResult moduleRun = vm.execute(compilation.requireVerifiedModule());
-        out.print(moduleRun.getStdout());
-        if (moduleRun.isFailure()) {
-            err.println(moduleRun.getTraceback().format());
-            return 2;
-        }
-
-        if (options.routeMethod != null) {
-            PyValue appValue = moduleRun.getGlobals().get("app");
-            if (!(appValue instanceof PyFlaskApp)) {
-                err.println("RuntimeError: root module did not define a Flask 'app'");
-                return 2;
+            boolean teachingView = !options.hasSelection;
+            if (teachingView || options.ast) {
+                ASTPrinter printer = new ASTPrinter();
+                printer.visitProgram(program);
+                out.println("====== Flask AST ======");
+                out.print(printer.getOutput());
             }
-            VmResult routeRun = vm.invokeRoute(
-                    (PyFlaskApp) appValue,
-                    options.routeMethod,
-                    options.routePath,
-                    new PyDict());
-            out.print(routeRun.getStdout());
-            if (routeRun.isFailure()) {
-                err.println(routeRun.getTraceback().format());
-                return 2;
-            }
-            try {
-                PyResponse response = FlaskResponseNormalizer.normalize(
-                        routeRun.getReturnValue());
-                out.println(FlaskResponseNormalizer.format(response));
-            } catch (VmRuntimeException runtimeFailure) {
-                err.println(runtimeFailure.getExceptionValue().getExceptionTypeName()
-                        + ": " + runtimeFailure.getExceptionValue().getMessageText());
-                return 2;
+            if (teachingView || options.symbols) {
+                out.println("====== Flask SYMBOL TABLE ======");
+                out.print(symbols.getSymbolTable().format());
             }
         }
-        return 0;
-    }
 
-    private static void printDiagnostics(
-            FlaskCompilationResult compilation,
-            boolean includeInformational,
-            PrintStream err) {
-        for (Diagnostic diagnostic : compilation.getReporter().diagnostics()) {
-            if (includeInformational || diagnostic.isError() || diagnostic.isWarning()) {
+        boolean teachingView = !options.hasSelection;
+        for (Diagnostic diagnostic : reporter.diagnostics()) {
+            if (teachingView || options.diagnostics
+                    || diagnostic.isError() || diagnostic.isWarning()) {
                 err.println(diagnostic);
             }
         }
+        return reporter.hasErrors() ? 1 : 0;
     }
 
     private static int runHtmlCssCompiler(
@@ -252,18 +210,6 @@ public final class UnifiedMain {
                 : message;
     }
 
-    private static String sourceLabel(String[] args) {
-        if (args == null || args.length == 0 || args[0] == null
-                || args[0].trim().isEmpty() || args[0].startsWith("--")) {
-            return "<unknown>";
-        }
-        try {
-            return Paths.get(args[0]).toAbsolutePath().normalize().toString();
-        } catch (RuntimeException invalidPath) {
-            return "<unknown>";
-        }
-    }
-
     private static final class AntlrErrorCollector extends BaseErrorListener {
         private final String sourceFile;
         private final PrintStream err;
@@ -298,11 +244,6 @@ public final class UnifiedMain {
         private boolean ast;
         private boolean symbols;
         private boolean diagnostics;
-        private boolean disassemble;
-        private boolean runBytecode;
-        private String routeMethod;
-        private String routePath;
-        private Path fileSystemRoot;
         private boolean debug;
         private boolean hasSelection;
         private final Set<String> seen = new HashSet<>();
@@ -347,45 +288,6 @@ public final class UnifiedMain {
                         result.diagnostics = true;
                         result.hasSelection = true;
                         break;
-                    case "--disassemble":
-                        result.once(option);
-                        result.disassemble = true;
-                        result.hasSelection = true;
-                        break;
-                    case "--run-bytecode":
-                        result.once(option);
-                        result.runBytecode = true;
-                        result.hasSelection = true;
-                        break;
-                    case "--invoke-route":
-                        result.once(option);
-                        if (index + 2 >= args.length) {
-                            throw new CliFailure(
-                                    "--invoke-route requires METHOD and PATH");
-                        }
-                        result.routeMethod = requireValue(
-                                args[++index], "HTTP method for --invoke-route");
-                        result.routePath = requireValue(
-                                args[++index], "request path for --invoke-route");
-                        if (!result.routePath.startsWith("/")) {
-                            throw new CliFailure("Route path must start with '/'");
-                        }
-                        result.hasSelection = true;
-                        break;
-                    case "--allow-fs-read":
-                        result.once(option);
-                        if (index + 1 >= args.length) {
-                            throw new CliFailure("--allow-fs-read requires ROOT");
-                        }
-                        String root = requireValue(args[++index],
-                                "root path for --allow-fs-read");
-                        try {
-                            result.fileSystemRoot = Paths.get(root)
-                                    .toAbsolutePath().normalize();
-                        } catch (RuntimeException invalidPath) {
-                            throw new CliFailure("Invalid filesystem read root", invalidPath);
-                        }
-                        break;
                     case "--debug":
                         result.once(option);
                         result.debug = true;
@@ -401,20 +303,6 @@ public final class UnifiedMain {
             if (!seen.add(option)) {
                 throw new CliFailure("Duplicate option: " + option);
             }
-        }
-
-        private void rejectPythonOnlyHtmlOptions() {
-            if (disassemble || runBytecode || routeMethod != null
-                    || fileSystemRoot != null) {
-                throw new CliFailure("Python bytecode/runtime options cannot be used with HTML");
-            }
-        }
-
-        private static String requireValue(String value, String label) {
-            if (value == null || value.trim().isEmpty() || value.startsWith("--")) {
-                throw new CliFailure("Missing or malformed " + label);
-            }
-            return value;
         }
     }
 
