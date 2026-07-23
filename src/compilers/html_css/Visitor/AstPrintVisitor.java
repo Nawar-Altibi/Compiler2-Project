@@ -63,6 +63,11 @@ public class AstPrintVisitor implements HtmlVisitor {
 
     @Override
     public void visit(TextNode node) {
+        // Whitespace-only text nodes exist for faithful HTML generation
+        // (SEA_WS is a real token now); hide them from the teaching AST view.
+        if (node.getText().trim().isEmpty()) {
+            return;
+        }
         printNode(node, "text=\"" + node.getText().replace("\n", "\\n") + "\"");
     }
 

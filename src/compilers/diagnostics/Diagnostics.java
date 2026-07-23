@@ -318,6 +318,40 @@ public final class Diagnostics {
                 "'" + variableName + "' is not supplied by Flask");
     }
 
+    /**
+     * Template value problem during generation (plan section 6.3.4):
+     * undefined variable, bad attribute, unknown filter or endpoint.
+     * A WARNING — the page is still rendered with an empty value.
+     */
+    public static Diagnostic jinjaValueWarning(
+            String message, int line, int column, String sourceFile) {
+        return new Diagnostic(
+                DiagnosticCategory.UNDEFINED_JINJA_VARIABLE,
+                DiagnosticSeverity.WARNING,
+                CompilerPhase.CODE_GENERATION,
+                sourceFile,
+                line,
+                column,
+                message);
+    }
+
+    /**
+     * Structural template failure during generation (plan section 6.3.4):
+     * unbalanced blocks, missing extends target, template syntax errors.
+     * An ERROR — the page is not written.
+     */
+    public static Diagnostic templateStructureError(
+            String message, int line, int column, String sourceFile) {
+        return new Diagnostic(
+                DiagnosticCategory.INVALID_AST_STRUCTURE,
+                DiagnosticSeverity.ERROR,
+                CompilerPhase.CODE_GENERATION,
+                sourceFile,
+                line,
+                column,
+                message);
+    }
+
     public static Diagnostic duplicateSymbol(
             String kind,
             String name,

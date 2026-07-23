@@ -1,4 +1,4 @@
-// Generated from C:/Users/abdsa/IdeaProjects/Compiler_project/src/Rules/HtmlCssParser.g4 by ANTLR 4.13.2
+// Generated from HtmlCssParser.g4 by ANTLR 4.13.1
 package compilers.html_css.antlr;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -170,12 +170,3 @@ public class HtmlCssParserBaseListener implements HtmlCssParserListener {
 	 */
 	@Override public void visitErrorNode(ErrorNode node) { }
 }
-
-
-
-
-
-
-
-
-

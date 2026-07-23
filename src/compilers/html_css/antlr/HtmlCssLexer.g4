@@ -10,7 +10,12 @@ XML: '<?xml' .*? '>';
 CDATA: '<![CDATA[' .*? ']]>';
 DTD: '<!' .*? '>';
 SCRIPTLET: '<?' .*? '?>' | '<%' .*? '%>';
-SEA_WS: (' ' | '\t' | '\r'? '\n')+ -> skip;
+// Generation refactor (plan section 6.3.6): inter-element whitespace must
+// survive into the AST so rendered HTML keeps the template's line layout.
+// The parser has always referenced SEA_WS in htmlChardata, and the AST
+// builder deliberately keeps whitespace TextNodes — so the token is kept
+// instead of skipped. [agreed change on Nawar's half; coordinate on sync]
+SEA_WS: (' ' | '\t' | '\r'? '\n')+;
 
 STYLE_OPEN: '<style' .*? '>' -> pushMode(STYLE);
 TAG_OPEN: '<' -> pushMode(TAG);

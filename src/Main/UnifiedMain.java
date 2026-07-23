@@ -41,8 +41,12 @@ import java.util.Set;
  */
 public final class UnifiedMain {
     private static final String USAGE = String.join(System.lineSeparator(),
-            "Usage: java Main.UnifiedMain <file.py|file.html|file.jinja> [options]",
-            "Options:",
+            "Usage: java Main.UnifiedMain <project-dir|app.py|file.html|file.jinja> [options]",
+            "Generation (default for a project directory or app.py):",
+            "  --out DIR      output folder for generated pages (default: <project>/output)",
+            "  --reports DIR  compiler reports folder (default: <project>/compiler_output)",
+            "  --quiet        suppress the stdout summary",
+            "Analysis views (single file; disables generation for .py):",
             "  --ast          print the AST",
             "  --symbols      print the symbol table",
             "  --diagnostics  print all diagnostics",
@@ -64,14 +68,23 @@ public final class UnifiedMain {
         try {
             Options options = Options.parse(args);
             Path source = options.source.toAbsolutePath().normalize();
-            if (!Files.isRegularFile(source)) {
+            boolean isDirectory = Files.isDirectory(source);
+            if (!isDirectory && !Files.isRegularFile(source)) {
                 throw new CliFailure("Source file does not exist or is not a regular file: "
                         + options.source);
             }
 
+            if (isDirectory) {
+                return runGeneration(source, options, out, err);
+            }
             String fileName = source.getFileName().toString().toLowerCase(Locale.ROOT);
             if (fileName.endsWith(".py")) {
-                return runFlaskFrontEnd(source, options, out, err);
+                // Plan section 8.2: generation is the default for app.py;
+                // the analysis flags switch to teaching views instead.
+                if (options.hasSelection) {
+                    return runFlaskFrontEnd(source, options, out, err);
+                }
+                return runGeneration(source, options, out, err);
             }
             if (fileName.endsWith(".html") || fileName.endsWith(".jinja")) {
                 return runHtmlCssCompiler(source, options, out, err);
@@ -88,6 +101,38 @@ public final class UnifiedMain {
             }
             return 3;
         }
+    }
+
+    /** Runs the full generation pipeline and prints a short summary. */
+    private static int runGeneration(
+            Path source,
+            Options options,
+            PrintStream out,
+            PrintStream err) throws Exception {
+        final compilers.pipeline.GenerationPipeline.ProjectPaths paths;
+        try {
+            paths = compilers.pipeline.GenerationPipeline.ProjectPaths.resolve(
+                    source, options.outDir, options.reportsDir);
+        } catch (java.io.IOException badLayout) {
+            throw new CliFailure(badLayout.getMessage());
+        }
+
+        compilers.pipeline.GenerationResult result =
+                new compilers.pipeline.GenerationPipeline().run(paths);
+
+        for (compilers.diagnostics.Diagnostic diagnostic
+                : result.getReporter().diagnostics()) {
+            if (diagnostic.isError() || diagnostic.isWarning()) {
+                err.println(diagnostic);
+            }
+        }
+        if (!options.quiet) {
+            out.println("====== GENERATION ======");
+            out.print(result.getLogText());
+            out.println("output:  " + result.getOutputDir());
+            out.println("reports: " + result.getReportsDir());
+        }
+        return result.getExitCode();
     }
 
     /**
@@ -245,6 +290,9 @@ public final class UnifiedMain {
         private boolean symbols;
         private boolean diagnostics;
         private boolean debug;
+        private boolean quiet;
+        private Path outDir;
+        private Path reportsDir;
         private boolean hasSelection;
         private final Set<String> seen = new HashSet<>();
 
@@ -292,6 +340,18 @@ public final class UnifiedMain {
                         result.once(option);
                         result.debug = true;
                         break;
+                    case "--quiet":
+                        result.once(option);
+                        result.quiet = true;
+                        break;
+                    case "--out":
+                        result.once(option);
+                        result.outDir = pathValue(args, ++index, "--out");
+                        break;
+                    case "--reports":
+                        result.once(option);
+                        result.reportsDir = pathValue(args, ++index, "--reports");
+                        break;
                     default:
                         throw new CliFailure("Unknown option: " + option);
                 }
@@ -302,6 +362,18 @@ public final class UnifiedMain {
         private void once(String option) {
             if (!seen.add(option)) {
                 throw new CliFailure("Duplicate option: " + option);
+            }
+        }
+
+        private static Path pathValue(String[] args, int index, String option) {
+            if (index >= args.length || args[index] == null
+                    || args[index].trim().isEmpty() || args[index].startsWith("--")) {
+                throw new CliFailure(option + " requires a directory value");
+            }
+            try {
+                return Paths.get(args[index]);
+            } catch (RuntimeException invalidPath) {
+                throw new CliFailure("Invalid " + option + " path", invalidPath);
             }
         }
     }
