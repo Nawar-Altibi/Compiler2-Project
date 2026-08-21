@@ -1,0 +1,5 @@
+Semantic Analysis Report
+Source: app.py
+========================================
+No errors. No warnings.
+The program is valid for generation.

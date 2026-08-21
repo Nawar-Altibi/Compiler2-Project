@@ -1,0 +1,22 @@
+[parse]     app.py -> Python AST (9 top-level statements)
+[semantic]  0 error(s), 0 warning(s)
+[clean]     3 stale generated page(s) removed
+[extract]   from flask import 4 name(s)
+[extract]   route  GET / -> view index
+[extract]   route  GET,POST /add -> view add_product
+[extract]   route  GET,POST /edit -> view edit_product
+[extract]   app.run(...) is a no-op during generation
+[extract]   globals: store_name(str), products(list[3])
+[extract]   GET / -> render "index.jinja" context=[title, products, count]
+[warn]      condition not evaluable (Unsupported attribute access '.method' on UnsupportedRef) -> treated as False (GET view)
+[extract]   GET /add -> render "add_product.jinja" context=[title]
+[extract]   GET /edit -> render "edit_product.jinja" context=[title, product]
+[render]    "index.jinja" -> output/index.html (840 bytes)
+[render]    "add_product.jinja" -> output/add_product.html (661 bytes)
+[render]    "edit_product.jinja" -> output/edit_product.html (607 bytes)
+[render]    index.jinja extends base.html
+[render]    add_product.jinja extends base.html
+[render]    edit_product.jinja extends base.html
+[copy]      app.py, style.css, script.js, templates/
+[done]      3 page(s) generated, 7 support file(s) copied
+[report]    report.html generated

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Compiler Generation Report</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f6f8;color:#18202a;font-family:Arial,sans-serif}header{background:#17212b;color:#fff;padding:28px max(24px,calc((100% - 1080px)/2));display:flex;align-items:center;justify-content:space-between;gap:24px;border-bottom:5px solid #20a36a}h1,h2,p{margin-top:0}.eyebrow{color:#8dd9b8;font-size:12px;font-weight:bold;text-transform:uppercase;margin-bottom:6px}.subtitle{color:#cbd5df;margin-bottom:0}.status{padding:9px 13px;border-radius:4px;font-size:12px;font-weight:bold}.success{background:#dff7e9;color:#12613e}.failure{background:#ffe2df;color:#8a2119}main{max-width:1080px;margin:0 auto;padding:28px 24px 48px}section{margin-bottom:32px}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.stats article{background:#fff;border:1px solid #d9e0e7;border-radius:6px;padding:18px}.stats strong{display:block;font-size:26px;color:#0e6f91}.stats span{color:#637080}.section-heading{display:flex;align-items:end;justify-content:space-between;gap:16px;border-bottom:1px solid #ccd5de;margin-bottom:14px}.section-heading h2{margin-bottom:10px;font-size:19px}.section-heading span{color:#637080;font-size:13px;margin-bottom:10px}.page-list{list-style:none;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.page-list li{background:#fff;border:1px solid #d9e0e7;border-left:4px solid #20a36a;border-radius:5px;padding:14px}.page-list a{display:block;color:#0e6f91;font-weight:bold;text-decoration:none;margin-bottom:5px}.page-list span,.empty{font-size:13px;color:#637080}.artifact-links{display:flex;flex-wrap:wrap;gap:9px}.artifact-links a{background:#fff;border:1px solid #b9c6d2;border-radius:4px;color:#244a63;padding:9px 12px;text-decoration:none;font-weight:bold}details{background:#fff;border:1px solid #d9e0e7;border-radius:6px;margin-bottom:10px}summary{cursor:pointer;font-weight:bold;padding:13px 15px}pre{margin:0;border-top:1px solid #e2e8ee;background:#f8fafb;padding:16px;overflow:auto;font:12px/1.6 Consolas,monospace;white-space:pre-wrap}footer{text-align:center;color:#687684;padding:20px}@media(max-width:720px){header{align-items:flex-start;flex-direction:column}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.page-list{grid-template-columns:1fr}.section-heading{align-items:flex-start;flex-direction:column}.section-heading span{margin-top:-8px}}
+</style>
+</head>
+<body>
+<header><div><p class="eyebrow">Compiler2 Project</p><h1>Generation Report</h1><p class="subtitle">Python/Flask context extraction and Jinja-to-HTML output</p></div><span class="status success">SUCCESS</span></header>
+<main>
+<section class="stats" aria-label="Generation summary"><article><strong>0</strong><span>Exit code</span></article><article><strong>3</strong><span>Generated pages</span></article><article><strong>0</strong><span>Errors</span></article><article><strong>0</strong><span>Warnings</span></article></section>
+<section><div class="section-heading"><h2>Generated pages</h2><span>Open the compiler output</span></div><ul class="page-list"><li><a href="../output/index.html">index.html</a><span>Generated HTML</span></li><li><a href="../output/add_product.html">add_product.html</a><span>Generated HTML</span></li><li><a href="../output/edit_product.html">edit_product.html</a><span>Generated HTML</span></li></ul></section>
+<section><div class="section-heading"><h2>Compiler artifacts</h2><span>Inspect each compilation stage</span></div><nav class="artifact-links"><a href="ast_python.json">Python AST</a><a href="ast_jinja.json">Jinja AST</a><a href="semantic_report.txt">Semantic report</a><a href="generation_log.txt">Generation log</a></nav></section>
+<section><details open><summary>Generation pipeline</summary><pre>[parse]     app.py -&gt; Python AST (9 top-level statements)
+[semantic]  0 error(s), 0 warning(s)
+[clean]     3 stale generated page(s) removed
+[extract]   from flask import 4 name(s)
+[extract]   route  GET / -&gt; view index
+[extract]   route  GET,POST /add -&gt; view add_product
+[extract]   route  GET,POST /edit -&gt; view edit_product
+[extract]   app.run(...) is a no-op during generation
+[extract]   globals: store_name(str), products(list[3])
+[extract]   GET / -&gt; render &quot;index.jinja&quot; context=[title, products, count]
+[warn]      condition not evaluable (Unsupported attribute access '.method' on UnsupportedRef) -&gt; treated as False (GET view)
+[extract]   GET /add -&gt; render &quot;add_product.jinja&quot; context=[title]
+[extract]   GET /edit -&gt; render &quot;edit_product.jinja&quot; context=[title, product]
+[render]    &quot;index.jinja&quot; -&gt; output/index.html (840 bytes)
+[render]    &quot;add_product.jinja&quot; -&gt; output/add_product.html (661 bytes)
+[render]    &quot;edit_product.jinja&quot; -&gt; output/edit_product.html (607 bytes)
+[render]    index.jinja extends base.html
+[render]    add_product.jinja extends base.html
+[render]    edit_product.jinja extends base.html
+[copy]      app.py, style.css, script.js, templates/
+[done]      3 page(s) generated, 7 support file(s) copied
+[report]    report.html generated
+</pre></details><details><summary>Semantic analysis</summary><pre>Semantic Analysis Report
+Source: app.py
+========================================
+No errors. No warnings.
+The program is valid for generation.
+</pre></details></section>
+</main>
+<footer>Deterministic compiler output - no runtime server required</footer>
+</body>
+</html>

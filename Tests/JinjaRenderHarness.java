@@ -40,6 +40,8 @@ public final class JinjaRenderHarness {
                 JinjaRenderHarness::testUndefinedValue);
         run("unbalanced blocks are structural errors",
                 JinjaRenderHarness::testStructuralError);
+        run("template syntax diagnostics preserve line and column",
+                JinjaRenderHarness::testSyntaxErrorLocation);
         run("statement-only lines vanish (trim-blocks policy)",
                 JinjaRenderHarness::testWhitespacePolicy);
         run("value formatting: ints, booleans, None",
@@ -169,6 +171,22 @@ public final class JinjaRenderHarness {
             throw new AssertionError("unbalanced blocks must fail rendering");
         } catch (JinjaRenderer.RenderFailure expected) {
             check(reporter.hasErrors(), "structural failure must be an ERROR diagnostic");
+        }
+    }
+
+    private static void testSyntaxErrorLocation() throws Exception {
+        write("syntax.jinja", "<div>\n{{ name\n</div>\n");
+        DiagnosticReporter reporter = new DiagnosticReporter();
+        JinjaRenderer renderer = new JinjaRenderer(
+                reporter, root, new LinkedHashMap<>());
+        try {
+            renderer.render("syntax.jinja", context());
+            throw new AssertionError("malformed Jinja syntax must fail rendering");
+        } catch (JinjaRenderer.RenderFailure expected) {
+            check(reporter.hasErrors(), "syntax failure must be an ERROR diagnostic");
+            Diagnostic diagnostic = reporter.errors().get(0);
+            check(diagnostic.line() >= 2,
+                    "syntax diagnostic must preserve its source line: " + diagnostic);
         }
     }
 

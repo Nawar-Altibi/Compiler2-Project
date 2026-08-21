@@ -344,9 +344,9 @@ public final class JinjaRenderer {
         parser.addErrorListener(syntaxErrors);
         HtmlCssParser.HtmlDocumentContext tree = parser.htmlDocument();
         if (!syntaxErrors.issues.isEmpty()) {
-            for (String issue : syntaxErrors.issues) {
+            for (SyntaxIssue issue : syntaxErrors.issues) {
                 reporter.report(Diagnostics.templateStructureError(
-                        issue, 0, 0, templateName));
+                        issue.message, issue.line, issue.column, templateName));
             }
             throw new RenderFailure("Template " + templateName
                     + " has syntax errors");
@@ -372,8 +372,20 @@ public final class JinjaRenderer {
         return astRoot;
     }
 
+    private static final class SyntaxIssue {
+        final int line;
+        final int column;
+        final String message;
+
+        SyntaxIssue(int line, int column, String message) {
+            this.line = line;
+            this.column = Math.max(column, 0);
+            this.message = message;
+        }
+    }
+
     private static final class SyntaxErrorCollector extends BaseErrorListener {
-        final List<String> issues = new ArrayList<>();
+        final List<SyntaxIssue> issues = new ArrayList<>();
 
         @Override
         public void syntaxError(
@@ -383,8 +395,7 @@ public final class JinjaRenderer {
                 int charPositionInLine,
                 String message,
                 RecognitionException exception) {
-            issues.add("Syntax error at " + line + ":"
-                    + Math.max(charPositionInLine, 0) + " " + message);
+            issues.add(new SyntaxIssue(line, charPositionInLine, message));
         }
     }
 

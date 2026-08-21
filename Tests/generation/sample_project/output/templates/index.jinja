@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<h2>{{ title }} ({{ count }} products)</h2>
+<div class="product-grid">
+{% for product in products %}
+<div class="product-card">
+<h3>{{ loop.index }}. {{ product.name }}</h3>
+<p>{{ product.description }}</p>
+<p class="price">${{ product.price }}</p>
+{% if product.price > 500 %}
+<span class="premium">Premium</span>
+{% endif %}
+<a href="{{ url_for('edit_product') }}">Edit</a>
+</div>
+{% endfor %}
+</div>
+{% endblock %}

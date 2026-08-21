@@ -24,6 +24,10 @@ public final class GenerationLog {
         add("[render]", message);
     }
 
+    public void clean(String message) {
+        add("[clean]", message);
+    }
+
     public void copy(String message) {
         add("[copy]", message);
     }
@@ -38,6 +42,10 @@ public final class GenerationLog {
 
     public void done(String message) {
         add("[done]", message);
+    }
+
+    public void report(String message) {
+        add("[report]", message);
     }
 
     /** Adopts pre-formatted lines (extractor/renderer already prefix them). */

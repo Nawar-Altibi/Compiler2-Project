@@ -131,6 +131,7 @@ public final class UnifiedMain {
             out.print(result.getLogText());
             out.println("output:  " + result.getOutputDir());
             out.println("reports: " + result.getReportsDir());
+            out.println("dashboard: " + result.getReportsDir().resolve("report.html"));
         }
         return result.getExitCode();
     }

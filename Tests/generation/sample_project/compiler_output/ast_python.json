@@ -1,0 +1,782 @@
+{
+  "kind": "Program",
+  "line": 1,
+  "column": 0,
+  "children": [
+    {
+      "kind": "FromImport",
+      "line": 1,
+      "column": 0,
+      "module": "flask",
+      "names": ["Flask", "render_template", "url_for", "request"]
+    },
+    {
+      "kind": "Assignment",
+      "line": 3,
+      "column": 0,
+      "operator": "=",
+      "children": [
+        {
+          "kind": "Identifier",
+          "line": 3,
+          "column": 0,
+          "name": "app"
+        },
+        {
+          "kind": "FunctionCall",
+          "line": 3,
+          "column": 6,
+          "children": [
+            {
+              "kind": "Identifier",
+              "line": 3,
+              "column": 6,
+              "name": "Flask"
+            },
+            {
+              "kind": "Identifier",
+              "line": 3,
+              "column": 12,
+              "name": "__name__"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "Assignment",
+      "line": 5,
+      "column": 0,
+      "operator": "=",
+      "children": [
+        {
+          "kind": "Identifier",
+          "line": 5,
+          "column": 0,
+          "name": "store_name"
+        },
+        {
+          "kind": "Literal",
+          "line": 5,
+          "column": 13,
+          "type": "STRING",
+          "value": "Products Store"
+        }
+      ]
+    },
+    {
+      "kind": "Assignment",
+      "line": 7,
+      "column": 0,
+      "operator": "=",
+      "children": [
+        {
+          "kind": "Identifier",
+          "line": 7,
+          "column": 0,
+          "name": "products"
+        },
+        {
+          "kind": "List",
+          "line": 7,
+          "column": 11,
+          "children": [
+            {
+              "kind": "Dict",
+              "line": 8,
+              "column": 4,
+              "children": [
+                {
+                  "kind": "Literal",
+                  "line": 8,
+                  "column": 5,
+                  "type": "STRING",
+                  "value": "name"
+                },
+                {
+                  "kind": "Literal",
+                  "line": 8,
+                  "column": 13,
+                  "type": "STRING",
+                  "value": "Phone"
+                },
+                {
+                  "kind": "Literal",
+                  "line": 8,
+                  "column": 22,
+                  "type": "STRING",
+                  "value": "price"
+                },
+                {
+                  "kind": "Literal",
+                  "line": 8,
+                  "column": 31,
+                  "type": "INTEGER",
+                  "value": 300
+                },
+                {
+                  "kind": "Literal",
+                  "line": 8,
+                  "column": 36,
+                  "type": "STRING",
+                  "value": "description"
+                },
+                {
+                  "kind": "Literal",
+                  "line": 8,
+                  "column": 51,
+                  "type": "STRING",
+                  "value": "A reliable phone"
+                }
+              ]
+            },
+            {
+              "kind": "Dict",
+              "line": 9,
+              "column": 4,
+              "children": [
+                {
+                  "kind": "Literal",
+                  "line": 9,
+                  "column": 5,
+                  "type": "STRING",
+                  "value": "name"
+                },
+                {
+                  "kind": "Literal",
+                  "line": 9,
+                  "column": 13,
+                  "type": "STRING",
+                  "value": "Laptop"
+                },
+                {
+                  "kind": "Literal",
+                  "line": 9,
+                  "column": 23,
+                  "type": "STRING",
+                  "value": "price"
+                },
+                {
+                  "kind": "Literal",
+                  "line": 9,
+                  "column": 32,
+                  "type": "INTEGER",
+                  "value": 800
+                },
+                {
+                  "kind": "Literal",
+                  "line": 9,
+                  "column": 37,
+                  "type": "STRING",
+                  "value": "description"
+                },
+                {
+                  "kind": "Literal",
+                  "line": 9,
+                  "column": 52,
+                  "type": "STRING",
+                  "value": "A fast laptop"
+                }
+              ]
+            },
+            {
+              "kind": "Dict",
+              "line": 10,
+              "column": 4,
+              "children": [
+                {
+                  "kind": "Literal",
+                  "line": 10,
+                  "column": 5,
+                  "type": "STRING",
+                  "value": "name"
+                },
+                {
+                  "kind": "Literal",
+                  "line": 10,
+                  "column": 13,
+                  "type": "STRING",
+                  "value": "Headset"
+                },
+                {
+                  "kind": "Literal",
+                  "line": 10,
+                  "column": 24,
+                  "type": "STRING",
+                  "value": "price"
+                },
+                {
+                  "kind": "Literal",
+                  "line": 10,
+                  "column": 33,
+                  "type": "INTEGER",
+                  "value": 50
+                },
+                {
+                  "kind": "Literal",
+                  "line": 10,
+                  "column": 37,
+                  "type": "STRING",
+                  "value": "description"
+                },
+                {
+                  "kind": "Literal",
+                  "line": 10,
+                  "column": 52,
+                  "type": "STRING",
+                  "value": "Comfortable headset"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "FunctionDef",
+      "line": 13,
+      "column": 0,
+      "name": "product_count",
+      "parameters": ["items"],
+      "children": [
+        {
+          "kind": "Assignment",
+          "line": 14,
+          "column": 4,
+          "operator": "=",
+          "children": [
+            {
+              "kind": "Identifier",
+              "line": 14,
+              "column": 4,
+              "name": "total"
+            },
+            {
+              "kind": "Literal",
+              "line": 14,
+              "column": 12,
+              "type": "INTEGER",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "kind": "For",
+          "line": 15,
+          "column": 4,
+          "children": [
+            {
+              "kind": "Identifier",
+              "line": 15,
+              "column": 8,
+              "name": "item"
+            },
+            {
+              "kind": "Identifier",
+              "line": 15,
+              "column": 16,
+              "name": "items"
+            },
+            {
+              "kind": "Assignment",
+              "line": 16,
+              "column": 8,
+              "operator": "+=",
+              "children": [
+                {
+                  "kind": "Identifier",
+                  "line": 16,
+                  "column": 8,
+                  "name": "total"
+                },
+                {
+                  "kind": "Literal",
+                  "line": 16,
+                  "column": 17,
+                  "type": "INTEGER",
+                  "value": 1
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "Return",
+          "line": 17,
+          "column": 4,
+          "children": [
+            {
+              "kind": "Identifier",
+              "line": 17,
+              "column": 11,
+              "name": "total"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "FunctionDef",
+      "line": 19,
+      "column": 0,
+      "name": "index",
+      "parameters": [],
+      "children": [
+        {
+          "kind": "FunctionCall",
+          "line": 19,
+          "column": 1,
+          "children": [
+            {
+              "kind": "AttributeAccess",
+              "line": 19,
+              "column": 1,
+              "attribute": "route",
+              "children": [
+                {
+                  "kind": "Identifier",
+                  "line": 19,
+                  "column": 1,
+                  "name": "app"
+                }
+              ]
+            },
+            {
+              "kind": "Literal",
+              "line": 19,
+              "column": 11,
+              "type": "STRING",
+              "value": "/"
+            }
+          ]
+        },
+        {
+          "kind": "Return",
+          "line": 21,
+          "column": 4,
+          "children": [
+            {
+              "kind": "FunctionCall",
+              "line": 21,
+              "column": 11,
+              "keywords": ["title", "products", "count"],
+              "children": [
+                {
+                  "kind": "Identifier",
+                  "line": 21,
+                  "column": 11,
+                  "name": "render_template"
+                },
+                {
+                  "kind": "Literal",
+                  "line": 21,
+                  "column": 27,
+                  "type": "STRING",
+                  "value": "index.jinja"
+                },
+                {
+                  "kind": "Identifier",
+                  "line": 21,
+                  "column": 48,
+                  "name": "store_name"
+                },
+                {
+                  "kind": "Identifier",
+                  "line": 22,
+                  "column": 36,
+                  "name": "products"
+                },
+                {
+                  "kind": "FunctionCall",
+                  "line": 23,
+                  "column": 33,
+                  "children": [
+                    {
+                      "kind": "Identifier",
+                      "line": 23,
+                      "column": 33,
+                      "name": "product_count"
+                    },
+                    {
+                      "kind": "Identifier",
+                      "line": 23,
+                      "column": 47,
+                      "name": "products"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "FunctionDef",
+      "line": 25,
+      "column": 0,
+      "name": "add_product",
+      "parameters": [],
+      "children": [
+        {
+          "kind": "FunctionCall",
+          "line": 25,
+          "column": 1,
+          "keywords": ["methods"],
+          "children": [
+            {
+              "kind": "AttributeAccess",
+              "line": 25,
+              "column": 1,
+              "attribute": "route",
+              "children": [
+                {
+                  "kind": "Identifier",
+                  "line": 25,
+                  "column": 1,
+                  "name": "app"
+                }
+              ]
+            },
+            {
+              "kind": "Literal",
+              "line": 25,
+              "column": 11,
+              "type": "STRING",
+              "value": "/add"
+            },
+            {
+              "kind": "List",
+              "line": 25,
+              "column": 27,
+              "children": [
+                {
+                  "kind": "Literal",
+                  "line": 25,
+                  "column": 28,
+                  "type": "STRING",
+                  "value": "GET"
+                },
+                {
+                  "kind": "Literal",
+                  "line": 25,
+                  "column": 35,
+                  "type": "STRING",
+                  "value": "POST"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "If",
+          "line": 27,
+          "column": 4,
+          "children": [
+            {
+              "kind": "Compare",
+              "line": 27,
+              "column": 7,
+              "operators": ["=="],
+              "children": [
+                {
+                  "kind": "AttributeAccess",
+                  "line": 27,
+                  "column": 7,
+                  "attribute": "method",
+                  "children": [
+                    {
+                      "kind": "Identifier",
+                      "line": 27,
+                      "column": 7,
+                      "name": "request"
+                    }
+                  ]
+                },
+                {
+                  "kind": "Literal",
+                  "line": 27,
+                  "column": 25,
+                  "type": "STRING",
+                  "value": "POST"
+                }
+              ]
+            },
+            {
+              "kind": "Return",
+              "line": 28,
+              "column": 8,
+              "children": [
+                {
+                  "kind": "FunctionCall",
+                  "line": 28,
+                  "column": 15,
+                  "keywords": ["title", "products", "count"],
+                  "children": [
+                    {
+                      "kind": "Identifier",
+                      "line": 28,
+                      "column": 15,
+                      "name": "render_template"
+                    },
+                    {
+                      "kind": "Literal",
+                      "line": 28,
+                      "column": 31,
+                      "type": "STRING",
+                      "value": "index.jinja"
+                    },
+                    {
+                      "kind": "Identifier",
+                      "line": 28,
+                      "column": 52,
+                      "name": "store_name"
+                    },
+                    {
+                      "kind": "Identifier",
+                      "line": 29,
+                      "column": 40,
+                      "name": "products"
+                    },
+                    {
+                      "kind": "FunctionCall",
+                      "line": 30,
+                      "column": 37,
+                      "children": [
+                        {
+                          "kind": "Identifier",
+                          "line": 30,
+                          "column": 37,
+                          "name": "product_count"
+                        },
+                        {
+                          "kind": "Identifier",
+                          "line": 30,
+                          "column": 51,
+                          "name": "products"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "Return",
+          "line": 31,
+          "column": 4,
+          "children": [
+            {
+              "kind": "FunctionCall",
+              "line": 31,
+              "column": 11,
+              "keywords": ["title"],
+              "children": [
+                {
+                  "kind": "Identifier",
+                  "line": 31,
+                  "column": 11,
+                  "name": "render_template"
+                },
+                {
+                  "kind": "Literal",
+                  "line": 31,
+                  "column": 27,
+                  "type": "STRING",
+                  "value": "add_product.jinja"
+                },
+                {
+                  "kind": "Literal",
+                  "line": 31,
+                  "column": 54,
+                  "type": "STRING",
+                  "value": "Add Product"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "FunctionDef",
+      "line": 33,
+      "column": 0,
+      "name": "edit_product",
+      "parameters": [],
+      "children": [
+        {
+          "kind": "FunctionCall",
+          "line": 33,
+          "column": 1,
+          "keywords": ["methods"],
+          "children": [
+            {
+              "kind": "AttributeAccess",
+              "line": 33,
+              "column": 1,
+              "attribute": "route",
+              "children": [
+                {
+                  "kind": "Identifier",
+                  "line": 33,
+                  "column": 1,
+                  "name": "app"
+                }
+              ]
+            },
+            {
+              "kind": "Literal",
+              "line": 33,
+              "column": 11,
+              "type": "STRING",
+              "value": "/edit"
+            },
+            {
+              "kind": "List",
+              "line": 33,
+              "column": 28,
+              "children": [
+                {
+                  "kind": "Literal",
+                  "line": 33,
+                  "column": 29,
+                  "type": "STRING",
+                  "value": "GET"
+                },
+                {
+                  "kind": "Literal",
+                  "line": 33,
+                  "column": 36,
+                  "type": "STRING",
+                  "value": "POST"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "Return",
+          "line": 35,
+          "column": 4,
+          "children": [
+            {
+              "kind": "FunctionCall",
+              "line": 35,
+              "column": 11,
+              "keywords": ["title", "product"],
+              "children": [
+                {
+                  "kind": "Identifier",
+                  "line": 35,
+                  "column": 11,
+                  "name": "render_template"
+                },
+                {
+                  "kind": "Literal",
+                  "line": 35,
+                  "column": 27,
+                  "type": "STRING",
+                  "value": "edit_product.jinja"
+                },
+                {
+                  "kind": "Literal",
+                  "line": 35,
+                  "column": 55,
+                  "type": "STRING",
+                  "value": "Edit Product"
+                },
+                {
+                  "kind": "Subscript",
+                  "line": 36,
+                  "column": 35,
+                  "children": [
+                    {
+                      "kind": "Identifier",
+                      "line": 36,
+                      "column": 35,
+                      "name": "products"
+                    },
+                    {
+                      "kind": "Literal",
+                      "line": 36,
+                      "column": 44,
+                      "type": "INTEGER",
+                      "value": 0
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "If",
+      "line": 38,
+      "column": 0,
+      "children": [
+        {
+          "kind": "Compare",
+          "line": 38,
+          "column": 3,
+          "operators": ["=="],
+          "children": [
+            {
+              "kind": "Identifier",
+              "line": 38,
+              "column": 3,
+              "name": "__name__"
+            },
+            {
+              "kind": "Literal",
+              "line": 38,
+              "column": 15,
+              "type": "STRING",
+              "value": "__main__"
+            }
+          ]
+        },
+        {
+          "kind": "ExpressionStatement",
+          "line": 39,
+          "column": 4,
+          "children": [
+            {
+              "kind": "FunctionCall",
+              "line": 39,
+              "column": 4,
+              "keywords": ["debug"],
+              "children": [
+                {
+                  "kind": "AttributeAccess",
+                  "line": 39,
+                  "column": 4,
+                  "attribute": "run",
+                  "children": [
+                    {
+                      "kind": "Identifier",
+                      "line": 39,
+                      "column": 4,
+                      "name": "app"
+                    }
+                  ]
+                },
+                {
+                  "kind": "Literal",
+                  "line": 39,
+                  "column": 18,
+                  "type": "BOOLEAN",
+                  "value": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

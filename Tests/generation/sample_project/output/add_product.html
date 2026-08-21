@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Add Product</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header>
+<h1>Product App</h1>
+<nav>
+<a href="index.html">Home</a> |
+<a href="add_product.html">Add Product</a>
+</nav>
+</header>
+<main>
+<h2>Add Product</h2>
+<form method="POST">
+<label>Name:</label><br />
+<input type="text" name="name" required /><br />
+<label>Description:</label><br />
+<textarea name="description" required></textarea><br />
+<label>Price:</label><br />
+<input type="number" name="price" step="0.01" required /><br />
+<button type="submit">Add Product</button>
+</form>
+</main>
+</body>
+</html>

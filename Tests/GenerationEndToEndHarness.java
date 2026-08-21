@@ -35,6 +35,10 @@ public final class GenerationEndToEndHarness {
                 GenerationEndToEndHarness::testSemanticErrorGate);
         run("unbalanced template fails with exit 2",
                 GenerationEndToEndHarness::testStructuralTemplateGate);
+        run("failed rerender removes stale generated HTML",
+                GenerationEndToEndHarness::testFailedRerenderRemovesStalePage);
+        run("duplicate output names fail before rendering",
+                GenerationEndToEndHarness::testOutputNameCollision);
         run("unknown url_for endpoint warns but still writes the page",
                 GenerationEndToEndHarness::testUnknownEndpointWarns);
 
@@ -87,6 +91,17 @@ public final class GenerationEndToEndHarness {
         String semantic = Files.readString(
                 run.reports.resolve("semantic_report.txt"), StandardCharsets.UTF_8);
         check(semantic.contains("No errors."), "semantic report clean");
+
+        String dashboard = Files.readString(
+                run.reports.resolve("report.html"), StandardCharsets.UTF_8);
+        check(dashboard.contains("Compiler Generation Report"),
+                "report.html title");
+        check(dashboard.contains("SUCCESS"), "report.html success status");
+        check(dashboard.contains("../output/index.html"),
+                "report.html links to generated pages");
+        check(dashboard.contains("ast_python.json")
+                        && dashboard.contains("ast_jinja.json"),
+                "report.html links to AST artifacts");
 
         // generation_log.txt is compared by SHAPE (plan section 9): prefixes
         // in pipeline order, one render line per page, and the done summary.
@@ -155,6 +170,91 @@ public final class GenerationEndToEndHarness {
                 "structurally broken page must not be written");
     }
 
+    private static void testFailedRerenderRemovesStalePage() throws Exception {
+        Path project = tempProject(
+                "from flask import Flask, render_template\n"
+                        + "app = Flask(__name__)\n"
+                        + "@app.route(\"/\")\n"
+                        + "def index():\n"
+                        + "    return render_template(\"page.jinja\", items=[1])\n",
+                "page.jinja",
+                "{% for item in items %}\n<p>{{ item }}</p>\n{% endfor %}\n");
+        Path work = Files.createTempDirectory("gen_rerender_");
+        work.toFile().deleteOnExit();
+        Path out = work.resolve("output");
+        Path reports = work.resolve("compiler_output");
+
+        Invocation first = invoke(project, out, reports);
+        equal(0, first.exitCode, "initial generation exit code");
+        check(Files.isRegularFile(out.resolve("page.html")),
+                "initial page generated");
+
+        Files.writeString(project.resolve("templates/page.jinja"),
+                "{% for item in items %}\n<p>{{ item }}</p>\n{% endif %}\n",
+                StandardCharsets.UTF_8);
+        Invocation second = invoke(project, out, reports);
+        equal(2, second.exitCode, "failed rerender exit code");
+        check(!Files.exists(out.resolve("page.html")),
+                "stale page must be removed after failed rerender");
+        String log = Files.readString(
+                reports.resolve("generation_log.txt"), StandardCharsets.UTF_8);
+        check(log.contains("stale generated page(s) removed"),
+                "cleanup must be visible in generation log");
+
+        Files.writeString(project.resolve("templates/page.jinja"),
+                "<p>{{ value }}</p>\n", StandardCharsets.UTF_8);
+        Invocation recovered = invoke(project, out, reports);
+        equal(0, recovered.exitCode, "recovered generation exit code");
+        check(Files.isRegularFile(out.resolve("page.html")),
+                "page regenerated after fixing the template");
+
+        Files.writeString(project.resolve("app.py"),
+                "from flask import Flask, render_template\n"
+                        + "app = Flask(__name__)\n"
+                        + "value = undefined_name\n"
+                        + "@app.route(\"/\")\n"
+                        + "def index():\n"
+                        + "    return render_template(\"page.jinja\", value=value)\n",
+                StandardCharsets.UTF_8);
+        Invocation semanticFailure = invoke(project, out, reports);
+        equal(1, semanticFailure.exitCode, "semantic rerender exit code");
+        check(!Files.exists(out.resolve("page.html")),
+                "semantic failure must not leave a stale page");
+    }
+
+    private static void testOutputNameCollision() throws Exception {
+        Path project = Files.createTempDirectory("gen_collision_");
+        project.toFile().deleteOnExit();
+        Files.writeString(project.resolve("app.py"),
+                "from flask import Flask, render_template\n"
+                        + "app = Flask(__name__)\n"
+                        + "@app.route(\"/one\")\n"
+                        + "def one():\n"
+                        + "    return render_template(\"page.jinja\")\n"
+                        + "@app.route(\"/two\")\n"
+                        + "def two():\n"
+                        + "    return render_template(\"page.html\")\n",
+                StandardCharsets.UTF_8);
+        Path templates = project.resolve("templates");
+        Files.createDirectories(templates);
+        Files.writeString(templates.resolve("page.jinja"), "<p>one</p>\n",
+                StandardCharsets.UTF_8);
+        Files.writeString(templates.resolve("page.html"), "<p>two</p>\n",
+                StandardCharsets.UTF_8);
+
+        Invocation run = invoke(project);
+        equal(2, run.exitCode, "output collision exit code");
+        check(run.err.contains("Output page collision"),
+                "collision diagnostic must explain the conflict");
+        check(!Files.exists(run.out.resolve("page.html")),
+                "colliding output must not be written");
+        String dashboard = Files.readString(
+                run.reports.resolve("report.html"), StandardCharsets.UTF_8);
+        check(dashboard.contains("FAILED")
+                        && dashboard.contains("Output page collision"),
+                "failed dashboard must expose the collision");
+    }
+
     private static void testUnknownEndpointWarns() throws Exception {
         Path project = tempProject(
                 "from flask import Flask, render_template\n"
@@ -199,6 +299,11 @@ public final class GenerationEndToEndHarness {
         work.toFile().deleteOnExit();
         Path out = work.resolve("output");
         Path reports = work.resolve("compiler_output");
+        return invoke(project, out, reports);
+    }
+
+    private static Invocation invoke(Path project, Path out, Path reports)
+            throws Exception {
         ByteArrayOutputStream stdout = new ByteArrayOutputStream();
         ByteArrayOutputStream stderr = new ByteArrayOutputStream();
         int exitCode = UnifiedMain.run(

@@ -53,10 +53,11 @@ compiler_output/
 ├── ast_python.json       ← شجرة AST لبايثون (JSON حتمي)
 ├── ast_jinja.json        ← أشجار كل القوالب المُحلَّلة
 ├── semantic_report.txt   ← تقرير التحليل الدلالي
-└── generation_log.txt    ← سجل مرحلة التوليد خطوة بخطوة
+├── generation_log.txt    ← سجل مرحلة التوليد خطوة بخطوة
+└── report.html           ← لوحة عرض تربط الصفحات والتقارير في مكان واحد
 ```
 
-قواعد ثابتة: خطأ دلالي يوقف التوليد؛ الملفات الداعمة تُنسَخ دون أي معالجة؛ أي تعديل بالبيانات يتطلب إعادة توليد.
+قواعد ثابتة: خطأ دلالي يوقف التوليد؛ الملفات الداعمة تُنسَخ دون أي معالجة؛ أي تعديل بالبيانات يتطلب إعادة توليد. قبل الرندرة تُنظَّف صفحات HTML القديمة من `output/` حتى لا تظهر نتيجة سابقة بعد فشل جديد، كما يُرفض تعارض اسمَي قالب ينتجان ملف HTML واحداً.
 
 ---
 
@@ -70,6 +71,22 @@ New-Item -ItemType Directory -Path $buildDir | Out-Null
 $javaSources = Get-ChildItem src,Tests -Recurse -Filter *.java |
     Select-Object -ExpandProperty FullName
 javac -encoding UTF-8 -cp lib\antlr-4.13.1-complete.jar -d $buildDir $javaSources
+```
+
+## التشغيل من IntelliJ
+
+للعرض السريع لا تحتاج إلى Terminal: افتح `src/Main/SampleProjectMain.java` ثم اضغط السهم الأخضر بجانب `main()` واختر **Run 'SampleProjectMain.main()'**. سيبني IntelliJ المشروع ثم يولّد مشروع العينة تلقائياً. اجعل **Working directory** هو مجلد المشروع (`$PROJECT_DIR$`) إذا طلب IntelliJ ذلك.
+
+بعد النجاح افتح:
+
+```text
+Tests/generation/sample_project/compiler_output/report.html
+```
+
+لتشغيل مشروع آخر، افتح **Run → Edit Configurations** وأضف مسار مجلده في **Program arguments**، مثلاً:
+
+```text
+Tests/generation/sample_project
 ```
 
 ## الاستخدام
@@ -91,7 +108,7 @@ java Main.UnifiedMain <project-dir|app.py|file.html|file.jinja> [options]
 ```powershell
 java -cp "$buildDir;lib\antlr-4.13.1-complete.jar" `
     Main.UnifiedMain Tests\generation\sample_project
-# ثم افتح Tests\generation\sample_project\output\index.html في المتصفح
+# ثم افتح Tests\generation\sample_project\compiler_output\report.html
 ```
 
 أمثلة أخرى:

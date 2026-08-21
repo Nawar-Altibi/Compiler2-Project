@@ -18,6 +18,7 @@ import compilers.flask.semantic.validation.ScopeRuleChecker;
 import compilers.html_css.render.JinjaRenderer;
 import compilers.report.AstJsonWriter;
 import compilers.report.GenerationLog;
+import compilers.report.GenerationReportWriter;
 import compilers.report.SemanticReportWriter;
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.CharStreams;
@@ -35,6 +36,7 @@ import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -116,6 +118,8 @@ public final class GenerationPipeline {
         GenerationLog log = new GenerationLog();
         List<String> generatedPages = new ArrayList<>();
         Files.createDirectories(paths.reportsDir);
+        Files.createDirectories(paths.outputDir);
+        int stalePagesRemoved = cleanGeneratedPages(paths.outputDir);
         String appLabel = paths.appPy.getFileName().toString();
 
         // ---------- 1. parse ----------
@@ -141,6 +145,7 @@ public final class GenerationPipeline {
             }
         }
         if (program == null) {
+            logCleanup(stalePagesRemoved, log);
             log.error("parsing failed; nothing to generate");
             return finish(1, paths, generatedPages, reporter, log, appLabel);
         }
@@ -162,6 +167,7 @@ public final class GenerationPipeline {
         }
         log.semantic(reporter.errors().size() + " error(s), "
                 + reporter.warnings().size() + " warning(s)");
+        logCleanup(stalePagesRemoved, log);
         if (reporter.hasErrors()) {
             log.error("semantic errors block generation (rule: valid program first)");
             return finish(1, paths, generatedPages, reporter, log, appLabel);
@@ -177,10 +183,16 @@ public final class GenerationPipeline {
         }
 
         // ---------- 4. rendering ----------
+        if (!validateOutputNames(context.getRenderJobs(), reporter, log, appLabel)) {
+            writeText(paths.reportsDir.resolve("ast_jinja.json"),
+                    AstJsonWriter.jinjaAstJson(new LinkedHashMap<>()));
+            log.done("0 page(s) generated; output-name collision blocked rendering");
+            return finish(2, paths, generatedPages, reporter, log, appLabel);
+        }
+
         Map<String, String> routeHrefs = routeHrefs(context);
         JinjaRenderer renderer = new JinjaRenderer(
                 reporter, paths.templateRoot, routeHrefs);
-        Files.createDirectories(paths.outputDir);
         boolean renderFailed = false;
         for (RenderJob job : context.getRenderJobs()) {
             Map<String, Object> plainContext =
@@ -214,6 +226,55 @@ public final class GenerationPipeline {
     }
 
     // ==================== helpers ====================
+
+    /** Removes only top-level HTML pages from the compiler-owned output folder. */
+    private int cleanGeneratedPages(Path outputDir) throws IOException {
+        int removed = 0;
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(outputDir)) {
+            for (Path file : stream) {
+                String name = file.getFileName().toString().toLowerCase(Locale.ROOT);
+                if (Files.isRegularFile(file) && name.endsWith(".html")) {
+                    Files.delete(file);
+                    removed++;
+                }
+            }
+        }
+        return removed;
+    }
+
+    private void logCleanup(int removed, GenerationLog log) {
+        if (removed > 0) {
+            log.clean(removed + " stale generated page(s) removed");
+        }
+    }
+
+    /** Prevents two templates/routes from silently overwriting one HTML page. */
+    private boolean validateOutputNames(
+            List<RenderJob> jobs,
+            DiagnosticReporter reporter,
+            GenerationLog log,
+            String sourceFile) {
+        Map<String, RenderJob> owners = new LinkedHashMap<>();
+        boolean valid = true;
+        for (RenderJob job : jobs) {
+            String outputName = job.getOutputFileName();
+            String key = outputName.toLowerCase(Locale.ROOT);
+            RenderJob previous = owners.putIfAbsent(key, job);
+            if (previous == null) {
+                continue;
+            }
+            String message = "Output page collision: templates '"
+                    + previous.getTemplateName() + "' (endpoint '"
+                    + previous.getEndpoint() + "') and '" + job.getTemplateName()
+                    + "' (endpoint '" + job.getEndpoint() + "') both generate '"
+                    + outputName + "'";
+            reporter.report(Diagnostics.invalidCodegenContext(
+                    message, job.getLine(), job.getColumn(), sourceFile));
+            log.error(message);
+            valid = false;
+        }
+        return valid;
+    }
 
     /** endpoint → href: the generated page when one exists, else the path. */
     private Map<String, String> routeHrefs(ProjectContext context) {
@@ -337,11 +398,22 @@ public final class GenerationPipeline {
             DiagnosticReporter reporter,
             GenerationLog log,
             String appLabel) throws IOException {
-        writeText(paths.reportsDir.resolve("semantic_report.txt"),
-                SemanticReportWriter.write(appLabel, reporter));
-        writeText(paths.reportsDir.resolve("generation_log.txt"), log.text());
+        String semanticReport = SemanticReportWriter.write(appLabel, reporter);
+        log.report("report.html generated");
+        String logText = log.text();
+        writeText(paths.reportsDir.resolve("semantic_report.txt"), semanticReport);
+        writeText(paths.reportsDir.resolve("generation_log.txt"), logText);
+        writeText(paths.reportsDir.resolve("report.html"),
+                GenerationReportWriter.write(
+                        exitCode,
+                        paths.outputDir,
+                        paths.reportsDir,
+                        generatedPages,
+                        reporter,
+                        semanticReport,
+                        logText));
         return new GenerationResult(exitCode, paths.outputDir, paths.reportsDir,
-                generatedPages, reporter, log.text());
+                generatedPages, reporter, logText);
     }
 
     private static void writeText(Path file, String content) throws IOException {
