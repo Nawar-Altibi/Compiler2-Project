@@ -1,69 +1,101 @@
-# مشروع Compiler2 — مترجم Python/Flask + Jinja إلى صفحات HTML
+# Compiler2 — Flask + Jinja Static Site Generator
 
-مشروع جامعي لمادة المترجمات 2: مترجم يقرأ مشروع Flask تعليمي (ملف `app.py` + قوالب Jinja + ملفات تنسيق)، يحلّله على مراحل الكومبايلر الكلاسيكية، ثم ينفّذ **مرحلة التوليد (Code Generation)** كما عرّفتها الجامعة:
+A university **Compilers II** project that implements a multi-phase compiler for a constrained Python/Flask web application. The compiler reads a Flask project (`app.py`, Jinja templates, and static assets), runs classic front-end analysis, evaluates route handlers to collect template context, and **generates static HTML pages** — the required code-generation stage for this course.
 
-> تنفيذ جزء تجهيز البيانات في Python، ثم تمرير القيم إلى قوالب Jinja لتوليد صفحات HTML النهائية.
-
-**الخرج الحقيقي للمترجم هو ملفات HTML مولَّدة + تقارير مراحل الترجمة** — لا يوجد Bytecode ولا Virtual Machine ولا ملفات `.pyc`.
+The real compiler output is **generated HTML plus translation reports**. There is no bytecode, virtual machine, or `.pyc` emission in the current architecture.
 
 ---
 
-## المخطط العام
+## What It Does
+
+Given a small Flask project like the bundled sample store app, the compiler:
+
+1. **Parses and analyzes** `app.py` (syntax, structure, symbol table, scope rules, semantics).
+2. **Extracts runtime context** by tree-walking evaluation of supported Python (data, routes, `render_template` calls).
+3. **Parses and renders** each referenced Jinja template into final HTML.
+4. **Copies support files** (`style.css`, `script.js`, `app.py`, raw templates) into the output folder.
+5. **Writes reports** (AST JSON, semantic report, generation log, HTML dashboard).
 
 ```
 app.py (Flask)
-   │  Python Parser (ANTLR)     → Python AST
-   │  Structural + Semantic     → التحقق (Symbol Table + Scope + Types)
-   │  Context Extraction        → البيانات + خريطة الـ routes   (بدون Symbol Table)
+   │  ANTLR lexer/parser          → Python AST
+   │  Structural + semantic gates → Symbol table, scope, types
+   │  Context extraction          → Route map + template arguments
    ▼
-Context Data + Route Map
+Context data + route map
    │  render_template("index.jinja", products=…)
    ▼
-templates/*.jinja  →  Jinja/HTML Parser → Jinja AST
-   │  Template Rendering: {% for %}, {{ var }}, {% if %}, {% extends %}, url_for()
+templates/*.jinja
+   │  HTML/Jinja/CSS parser       → Template AST
+   │  JinjaRenderer               → for/if/extends/blocks/url_for
    ▼
-output/*.html  +  compiler_output/*  ← خرج مرحلة التوليد
+output/*.html  +  compiler_output/*
 ```
-
-- **قسم Python/Flask** (`src/compilers/flask`): lexer/parser بـ ANTLR، بناء AST، تحقق بنيوي (`AstStructuralValidator`)، جداول رموز، `ScopeRuleChecker`، تحليل دلالي كامل (undefined/types/calls)، ثم **`ContextExtractor`**: مُقيّم شجري صغير (tree-walking) ينفّذ تجهيز البيانات ويلتقط نداءات `render_template` و`url_for` وخريطة الـ routes — ببيانات Java عادية وبلا جدول رموز (حسب تعريف الجامعة للمرحلة).
-- **قسم HTML/CSS/Jinja** (`src/compilers/html_css`): lexer/parser للقوالب، AST يحوي عقد Jinja، و**`JinjaRenderer`**: يبني block-tree من العقد الخام (for/if/block/extends عبر event stream + stack)، يقيّم التعابير `{{ … }}` بمُقيّم recursive-descent مصغّر، يطبّق الوراثة `extends/block`، ويحلّ `url_for` عبر خريطة الـ routes — فيُنتج HTML نهائياً.
-- **الأنبوب المشترك** (`src/compilers/pipeline` + `src/compilers/report`): تنظيم المراحل وبواباتها، وكتابة التقارير الأربعة.
-
-## ملفات الدخل
-
-| الدخل | الوصف |
-|---|---|
-| `app.py` | بيانات + routes + نداءات `render_template` |
-| `templates/*.jinja` (أو `.html`) | قوالب Jinja (`index`, `add_product`, `edit_product`, `base`) |
-| `style.css`, `script.js` | ملفات واجهة تُنسَخ كما هي (script.js اختياري) |
-
-## ملفات الخرج
-
-```
-output/
-├── index.html            ← مُولَّد
-├── add_product.html      ← مُولَّد
-├── edit_product.html     ← مُولَّد
-├── app.py                ← منسوخ كما هو
-├── style.css             ← منسوخ كما هو
-├── script.js             ← منسوخ كما هو
-└── templates/            ← منسوخ (لتشغيل التطبيق الأصلي)
-
-compiler_output/
-├── ast_python.json       ← شجرة AST لبايثون (JSON حتمي)
-├── ast_jinja.json        ← أشجار كل القوالب المُحلَّلة
-├── semantic_report.txt   ← تقرير التحليل الدلالي
-├── generation_log.txt    ← سجل مرحلة التوليد خطوة بخطوة
-└── report.html           ← لوحة عرض تربط الصفحات والتقارير في مكان واحد
-```
-
-قواعد ثابتة: خطأ دلالي يوقف التوليد؛ الملفات الداعمة تُنسَخ دون أي معالجة؛ أي تعديل بالبيانات يتطلب إعادة توليد. قبل الرندرة تُنظَّف صفحات HTML القديمة من `output/` حتى لا تظهر نتيجة سابقة بعد فشل جديد، كما يُرفض تعارض اسمَي قالب ينتجان ملف HTML واحداً.
 
 ---
 
-## البناء (Windows PowerShell)
+## Project Structure
 
-يلزم Java (`java`/`javac`). مكتبة ANTLR موجودة في `lib`.
+| Path | Responsibility |
+|------|----------------|
+| `src/compilers/flask/` | Python/Flask front end: ANTLR grammar, AST, symbol table, semantic analysis, context extraction (`PyEval`, `ContextExtractor`) |
+| `src/compilers/html_css/` | Template front end: HTML/Jinja/CSS parsing and `JinjaRenderer` |
+| `src/compilers/pipeline/` | End-to-end `GenerationPipeline` orchestration |
+| `src/compilers/report/` | AST JSON, semantic report, generation log, HTML dashboard |
+| `src/compilers/diagnostics/` | Shared diagnostic categories and reporting |
+| `src/Main/UnifiedMain.java` | Command-line entry point |
+| `src/Main/SampleProjectMain.java` | IntelliJ-friendly runner for the sample project |
+| `Tests/` | Regression harnesses, fixtures, and the rubric sample project |
+
+---
+
+## Input Layout
+
+A compilable project directory contains:
+
+| File / folder | Role |
+|---------------|------|
+| `app.py` | Flask routes, data, and `render_template` calls |
+| `templates/*.jinja` or `*.html` | Jinja templates (`index`, `add_product`, `edit_product`, `base`, …) |
+| `style.css` | Stylesheet (copied verbatim) |
+| `script.js` | Optional client script (copied verbatim) |
+
+---
+
+## Output Layout
+
+```
+output/
+├── index.html              ← generated
+├── add_product.html        ← generated
+├── edit_product.html       ← generated
+├── app.py                  ← copied
+├── style.css               ← copied
+├── script.js               ← copied (if present)
+└── templates/              ← copied (for running the original app)
+
+compiler_output/
+├── ast_python.json         ← deterministic Python AST dump
+├── ast_jinja.json          ← parsed template ASTs
+├── semantic_report.txt     ← semantic analysis summary
+├── generation_log.txt      ← step-by-step generation trace
+└── report.html             ← dashboard linking pages and reports
+```
+
+**Rules:** semantic errors stop generation; support files are never transformed; stale HTML in `output/` is removed before a new render so a failed run cannot leave outdated pages behind.
+
+---
+
+## Requirements
+
+- **Java** (JDK 8+): `java` and `javac` on your `PATH`
+- **ANTLR 4.13.1**: place `antlr-4.13.1-complete.jar` in the `lib/` directory (not committed to the repo)
+
+---
+
+## Build
+
+### Windows (PowerShell)
 
 ```powershell
 $buildDir = ".tmp\build-$(Get-Date -Format yyyyMMddHHmmss)"
@@ -73,72 +105,94 @@ $javaSources = Get-ChildItem src,Tests -Recurse -Filter *.java |
 javac -encoding UTF-8 -cp lib\antlr-4.13.1-complete.jar -d $buildDir $javaSources
 ```
 
-## التشغيل من IntelliJ
+### Linux / macOS
 
-للعرض السريع لا تحتاج إلى Terminal: افتح `src/Main/SampleProjectMain.java` ثم اضغط السهم الأخضر بجانب `main()` واختر **Run 'SampleProjectMain.main()'**. سيبني IntelliJ المشروع ثم يولّد مشروع العينة تلقائياً. اجعل **Working directory** هو مجلد المشروع (`$PROJECT_DIR$`) إذا طلب IntelliJ ذلك.
+```bash
+buildDir=".tmp/build-$(date +%Y%m%d%H%M%S)"
+mkdir -p "$buildDir"
+find src Tests -name '*.java' > sources.txt
+javac -encoding UTF-8 -cp lib/antlr-4.13.1-complete.jar -d "$buildDir" @sources.txt
+```
 
-بعد النجاح افتح:
+---
 
-```text
+## Run
+
+### Quick start (IntelliJ)
+
+Open `src/Main/SampleProjectMain.java` and run `main()`. Set the working directory to the project root (`$PROJECT_DIR$`). On success, open:
+
+```
 Tests/generation/sample_project/compiler_output/report.html
 ```
 
-لتشغيل مشروع آخر، افتح **Run → Edit Configurations** وأضف مسار مجلده في **Program arguments**، مثلاً:
-
-```text
-Tests/generation/sample_project
-```
-
-## الاستخدام
+### Command line
 
 ```text
 java Main.UnifiedMain <project-dir|app.py|file.html|file.jinja> [options]
 
-التوليد (الوضع الافتراضي لمجلد مشروع أو app.py):
-  --out DIR      مجلد الصفحات المولّدة (افتراضي: <project>/output)
-  --reports DIR  مجلد تقارير المترجم (افتراضي: <project>/compiler_output)
-  --quiet        إخفاء ملخص stdout
+Generation (default for a project directory or app.py):
+  --out DIR       Output folder for generated pages (default: <project>/output)
+  --reports DIR   Compiler reports folder (default: <project>/compiler_output)
+  --quiet         Suppress the stdout summary
 
-عروض التحليل (ملف واحد؛ توقف التوليد لملف .py):
-  --ast  --symbols  --diagnostics  --debug
+Analysis views (single file; disables generation for .py):
+  --ast           Print the AST
+  --symbols       Print the symbol table
+  --diagnostics   Print all diagnostics
+  --debug         Print Java stack traces on internal failures
 ```
 
-### مثال كامل (مشروع العيّنة المطابق لمتطلبات الجامعة)
+### Sample project
 
 ```powershell
 java -cp "$buildDir;lib\antlr-4.13.1-complete.jar" `
     Main.UnifiedMain Tests\generation\sample_project
-# ثم افتح Tests\generation\sample_project\compiler_output\report.html
 ```
 
-أمثلة أخرى:
+```bash
+java -cp "$buildDir:lib/antlr-4.13.1-complete.jar" \
+    Main.UnifiedMain Tests/generation/sample_project
+```
+
+### Analysis-only examples
 
 ```powershell
-# عرض AST وجدول الرموز لملف بايثون (بدون توليد)
+# Python: AST + symbol table, no generation
 java -cp "$buildDir;lib\antlr-4.13.1-complete.jar" Main.UnifiedMain app.py --ast --symbols
 
-# تحليل قالب منفرد
+# Single template
 java -cp "$buildDir;lib\antlr-4.13.1-complete.jar" Main.UnifiedMain templates\index.jinja --ast
 ```
 
-### أكواد الخروج
+---
 
-| Exit | المعنى |
-|---:|---|
-| `0` | نجاح (قد توجد تحذيرات) |
-| `1` | خطأ صياغي/دلالي في المصدر |
-| `2` | خطأ في مرحلة التوليد/الرندرة (مثل قالب غير متوازن) |
-| `3` | خطأ CLI أو فشل داخلي |
+## Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success (warnings may be present) |
+| `1` | Syntax or semantic error in source |
+| `2` | Generation/rendering failure (e.g. unbalanced template) |
+| `3` | CLI error or internal failure |
 
 ---
 
-## المجموعة المدعومة من Python (لمرحلة التوليد)
+## Supported Language Subset
 
-قيم أساسية (int بدقة حرة/float/str/bool/None)، list/dict/tuple/set، عمليات حسابية ومقارنات و`and/or/not`، f-strings، إسناد عادي ومركّب وتفكيك tuple، `if/elif/else`، `for/while` مع `else` و`break/continue`، دوال مستخدم بوسائط افتراضية، `@app.route/get/post`، `render_template`، `url_for`، مجموعة builtins (`len/range/str/sorted/enumerate/sum/…`). البناءات خارج المجموعة تُرفض بتشخيص واضح — لا قيم وهمية.
+### Python (generation phase)
 
-ومن Jinja: `{{ تعبير }}` مع escaping افتراضي، `{% for %}` (+`else` و`loop.index/first/last`)، `{% if/elif/else %}`، `{% extends %}/{% block %}`، فلاتر `upper/lower/length/default/title`، و`url_for` (بما فيها `static`).
+Primitives (`int`, `float`, `str`, `bool`, `None`), collections (`list`, `dict`, `tuple`, `set`), arithmetic and comparisons, `and` / `or` / `not`, f-strings, assignment and unpacking, `if` / `elif` / `else`, `for` / `while` with `else`, `break`, `continue`, user functions with default parameters, `@app.route` / `get` / `post`, `render_template`, `url_for`, and common builtins (`len`, `range`, `str`, `sorted`, `enumerate`, `sum`, …). Unsupported constructs are rejected with a clear diagnostic — no silent fallback values.
 
-## الاختبارات
+### Jinja
+
+`{{ expression }}` with default HTML escaping, `{% for %}` (including `else` and `loop.index` / `first` / `last`), `{% if %}` / `{% elif %}` / `{% else %}`, `{% extends %}` / `{% block %}`, filters (`upper`, `lower`, `length`, `default`, `title`), and `url_for` (including `static`).
+
+---
+
+## Tests
+
+Run every harness after building:
 
 ```powershell
 Get-ChildItem Tests -Filter *Harness.java | Sort-Object Name | ForEach-Object {
@@ -147,21 +201,32 @@ Get-ChildItem Tests -Filter *Harness.java | Sort-Object Name | ForEach-Object {
 }
 ```
 
-الحزم: front-end (37+17+14+5) + استخراج السياق (8) + رندرة Jinja (10) + توليد end-to-end بذهبيّات (6) + CLI (8).
+Coverage includes Flask front-end regression, semantic validation, context extraction, Jinja rendering, end-to-end generation with golden outputs, and CLI behavior.
 
-## بنية المجلدات
+---
 
-| المسار | المسؤولية |
-|---|---|
-| `src/compilers/flask/antlr_gen` | غرامر Python + المولَّدات |
-| `src/compilers/flask/ast` | عقد AST و`ASTBuilder` |
-| `src/compilers/flask/SymbolTable`, `semantic`, `runtime` | التحليل الدلالي وسجل الأسماء |
-| `src/compilers/flask/generation` | `PyEval` + `ContextExtractor` + نموذج بيانات المرحلة |
-| `src/compilers/html_css/antlr`, `ast`, `Visitor` | غرامر القوالب + AST + البُناة |
-| `src/compilers/html_css/render` | `JinjaRenderer` ومُقيّم التعابير والوراثة |
-| `src/compilers/pipeline`, `src/compilers/report` | تنظيم المراحل + التقارير الأربعة |
-| `src/compilers/diagnostics` | نظام التشخيصات المشترك |
-| `src/Main/UnifiedMain.java` | CLI فقط |
-| `Tests/` | الحزم الاختبارية + مشروع العيّنة + الذهبيّات |
+## Compiler Pipeline (detail)
 
-> **ملاحظة تاريخية:** نسخة سابقة من المشروع نفّذت مرحلة توليد كاملة كـ Bytecode مخصّص + Python-like VM بلغة Java (61 opcode، CFG verifier، closures/C3/exceptions). أُرشفت بالكامل على برانش `ghaith-work` بعد أن وضّحت الجامعة أن المطلوب هو توليد HTML عبر رندرة القوالب. المعمار الحالي يبقي الـ AST عقداً ثابتاً، فأي backend مستقبلي (بما فيه bytecode) يُضاف كمستهلك موازٍ دون المساس بالموجود.
+The generation pipeline (`GenerationPipeline`) enforces this gate order:
+
+1. Parse `app.py` → Python AST
+2. Structural validation (`AstStructuralValidator`)
+3. Symbol table construction (`SymbolTableBuilder`)
+4. Scope rules (`ScopeRuleChecker`)
+5. Semantic analysis (`SemanticAnalyzer`)
+6. Write `ast_python.json` and `semantic_report.txt` — **stop on semantic errors (exit 1)**
+7. Context extraction (`ContextExtractor` / `PyEval`) — **stop on extraction errors (exit 2)**
+8. Render each `RenderJob` via `JinjaRenderer` → `output/*.html`
+9. Copy support files; write `ast_jinja.json`, `generation_log.txt`, and `report.html`
+
+---
+
+## Historical Note
+
+An earlier iteration of this repository implemented a full custom-bytecode backend with a Python-like VM (61 opcodes, CFG verification, closures, C3 MRO, exceptions). That work is archived on the `ghaith-work` branch. The course requirement was clarified to **static HTML generation via template rendering**, which is what `main` implements today. The AST layer remains backend-agnostic so alternative code generators could be added as parallel consumers.
+
+---
+
+## License
+
+Academic project — see repository history and course materials for usage context.
