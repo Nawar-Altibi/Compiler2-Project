@@ -1,6 +1,7 @@
 package compilers.pipeline;
 
 import compilers.diagnostics.DiagnosticReporter;
+import compilers.flask.generation.ProjectContext;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -23,6 +24,7 @@ public final class GenerationResult {
     private final List<String> generatedPages;
     private final DiagnosticReporter reporter;
     private final String logText;
+    private final ProjectContext projectContext;
 
     public GenerationResult(
             int exitCode,
@@ -31,6 +33,17 @@ public final class GenerationResult {
             List<String> generatedPages,
             DiagnosticReporter reporter,
             String logText) {
+        this(exitCode, outputDir, reportsDir, generatedPages, reporter, logText, null);
+    }
+
+    public GenerationResult(
+            int exitCode,
+            Path outputDir,
+            Path reportsDir,
+            List<String> generatedPages,
+            DiagnosticReporter reporter,
+            String logText,
+            ProjectContext projectContext) {
         this.exitCode = exitCode;
         this.outputDir = outputDir;
         this.reportsDir = reportsDir;
@@ -38,6 +51,7 @@ public final class GenerationResult {
                 new ArrayList<>(generatedPages));
         this.reporter = Objects.requireNonNull(reporter, "reporter");
         this.logText = logText == null ? "" : logText;
+        this.projectContext = projectContext;
     }
 
     public int getExitCode() {
@@ -66,5 +80,10 @@ public final class GenerationResult {
 
     public boolean isSuccess() {
         return exitCode == 0;
+    }
+
+    /** Extracted data snapshot, available after the extraction phase succeeds. */
+    public ProjectContext getProjectContext() {
+        return projectContext;
     }
 }

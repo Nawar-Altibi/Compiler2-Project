@@ -5,6 +5,7 @@
 <meta charset="UTF-8" />
 <title>Edit Product</title>
 <link rel="stylesheet" href="style.css" />
+<script src="script.js" defer></script>
 </head>
 <body>
 <header>
@@ -15,14 +16,19 @@
 </nav>
 </header>
 <main>
-<h2>Edit Product: Phone</h2>
-<form method="POST">
+<h2 data-edit-heading>Edit Product</h2>
+<form data-edit-product-form>
 <label>Name:</label><br />
-<input type="text" name="name" value="Phone" /><br />
+<input type="text" name="name" value="Phone" required /><br />
+<label>Description:</label><br />
+<textarea name="description" required>A reliable phone</textarea><br />
 <label>Price:</label><br />
-<input type="number" name="price" value="300" /><br />
-<p class="note">Standard product.</p>
-<button type="submit">Save</button>
+<input type="number" name="price" step="0.01" value="300" required /><br />
+<p class="form-status" data-form-status aria-live="polite"></p>
+<div class="form-actions">
+<button type="submit">Save Changes</button>
+<a href="index.html">Cancel</a>
+</div>
 </form>
 </main>
 </body>

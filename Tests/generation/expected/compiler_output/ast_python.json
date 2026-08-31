@@ -91,40 +91,54 @@
                   "line": 8,
                   "column": 5,
                   "type": "STRING",
-                  "value": "name"
+                  "value": "id"
                 },
                 {
                   "kind": "Literal",
                   "line": 8,
-                  "column": 13,
+                  "column": 11,
+                  "type": "INTEGER",
+                  "value": 1
+                },
+                {
+                  "kind": "Literal",
+                  "line": 8,
+                  "column": 14,
                   "type": "STRING",
-                  "value": "Phone"
+                  "value": "name"
                 },
                 {
                   "kind": "Literal",
                   "line": 8,
                   "column": 22,
                   "type": "STRING",
-                  "value": "price"
+                  "value": "Phone"
                 },
                 {
                   "kind": "Literal",
                   "line": 8,
                   "column": 31,
+                  "type": "STRING",
+                  "value": "price"
+                },
+                {
+                  "kind": "Literal",
+                  "line": 8,
+                  "column": 40,
                   "type": "INTEGER",
                   "value": 300
                 },
                 {
                   "kind": "Literal",
                   "line": 8,
-                  "column": 36,
+                  "column": 45,
                   "type": "STRING",
                   "value": "description"
                 },
                 {
                   "kind": "Literal",
                   "line": 8,
-                  "column": 51,
+                  "column": 60,
                   "type": "STRING",
                   "value": "A reliable phone"
                 }
@@ -140,40 +154,54 @@
                   "line": 9,
                   "column": 5,
                   "type": "STRING",
+                  "value": "id"
+                },
+                {
+                  "kind": "Literal",
+                  "line": 9,
+                  "column": 11,
+                  "type": "INTEGER",
+                  "value": 2
+                },
+                {
+                  "kind": "Literal",
+                  "line": 9,
+                  "column": 14,
+                  "type": "STRING",
                   "value": "name"
                 },
                 {
                   "kind": "Literal",
                   "line": 9,
-                  "column": 13,
+                  "column": 22,
                   "type": "STRING",
                   "value": "Laptop"
                 },
                 {
                   "kind": "Literal",
                   "line": 9,
-                  "column": 23,
+                  "column": 32,
                   "type": "STRING",
                   "value": "price"
                 },
                 {
                   "kind": "Literal",
                   "line": 9,
-                  "column": 32,
+                  "column": 41,
                   "type": "INTEGER",
                   "value": 800
                 },
                 {
                   "kind": "Literal",
                   "line": 9,
-                  "column": 37,
+                  "column": 46,
                   "type": "STRING",
                   "value": "description"
                 },
                 {
                   "kind": "Literal",
                   "line": 9,
-                  "column": 52,
+                  "column": 61,
                   "type": "STRING",
                   "value": "A fast laptop"
                 }
@@ -189,40 +217,54 @@
                   "line": 10,
                   "column": 5,
                   "type": "STRING",
+                  "value": "id"
+                },
+                {
+                  "kind": "Literal",
+                  "line": 10,
+                  "column": 11,
+                  "type": "INTEGER",
+                  "value": 3
+                },
+                {
+                  "kind": "Literal",
+                  "line": 10,
+                  "column": 14,
+                  "type": "STRING",
                   "value": "name"
                 },
                 {
                   "kind": "Literal",
                   "line": 10,
-                  "column": 13,
+                  "column": 22,
                   "type": "STRING",
                   "value": "Headset"
                 },
                 {
                   "kind": "Literal",
                   "line": 10,
-                  "column": 24,
+                  "column": 33,
                   "type": "STRING",
                   "value": "price"
                 },
                 {
                   "kind": "Literal",
                   "line": 10,
-                  "column": 33,
+                  "column": 42,
                   "type": "INTEGER",
                   "value": 50
                 },
                 {
                   "kind": "Literal",
                   "line": 10,
-                  "column": 37,
+                  "column": 46,
                   "type": "STRING",
                   "value": "description"
                 },
                 {
                   "kind": "Literal",
                   "line": 10,
-                  "column": 52,
+                  "column": 61,
                   "type": "STRING",
                   "value": "Comfortable headset"
                 }

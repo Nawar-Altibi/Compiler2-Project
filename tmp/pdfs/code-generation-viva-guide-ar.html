@@ -1,0 +1,952 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>دليل مناقشة مرحلة Code Generation</title>
+<style>
+@page {
+  size: A4;
+  margin: 20mm 16mm 19mm;
+}
+
+:root {
+  --ink: #17232c;
+  --muted: #52636f;
+  --line: #cfd9df;
+  --soft: #eef4f6;
+  --accent: #08779a;
+  --green: #138a60;
+  --gold: #c18a00;
+}
+
+* { box-sizing: border-box; }
+
+html {
+  direction: rtl;
+  font-family: Tahoma, Arial, sans-serif;
+  font-size: 11.2pt;
+  color: var(--ink);
+  background: white;
+}
+
+body {
+  margin: 0;
+  direction: rtl;
+  text-align: right;
+  line-height: 1.78;
+}
+
+.cover {
+  min-height: 245mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  page-break-after: always;
+  position: relative;
+  padding: 22mm 13mm;
+  border-top: 9px solid var(--green);
+  border-bottom: 3px solid var(--accent);
+}
+
+.cover::before {
+  content: "";
+  position: absolute;
+  top: 15mm;
+  right: 13mm;
+  width: 42mm;
+  height: 5px;
+  background: var(--gold);
+}
+
+.cover .eyebrow {
+  color: var(--green);
+  font-size: 12pt;
+  font-weight: 700;
+  margin-bottom: 12mm;
+}
+
+.cover h1 {
+  margin: 0;
+  color: #102e3b;
+  font-size: 34pt;
+  line-height: 1.35;
+  font-weight: 800;
+}
+
+.cover h2 {
+  margin: 8mm 0 0;
+  padding: 0;
+  border: 0;
+  color: var(--muted);
+  font-size: 18pt;
+  font-weight: 500;
+  page-break-before: auto;
+}
+
+.cover .stack {
+  margin-top: 18mm;
+  padding: 6mm 7mm;
+  background: var(--soft);
+  border-right: 5px solid var(--accent);
+  color: #24414f;
+  font-size: 12pt;
+}
+
+.cover .meta {
+  margin-top: auto;
+  color: var(--muted);
+  font-size: 10pt;
+}
+
+.toc {
+  page-break-after: always;
+}
+
+.toc h1 {
+  margin: 0 0 10mm;
+  color: #102e3b;
+  font-size: 25pt;
+  border-bottom: 3px solid var(--green);
+  padding-bottom: 4mm;
+}
+
+.toc-list {
+  columns: 2;
+  column-gap: 12mm;
+}
+
+.toc-item {
+  break-inside: avoid;
+  margin: 0 0 3.2mm;
+  padding-bottom: 2mm;
+  border-bottom: 1px dotted #b9c8d0;
+}
+
+.toc-item.level-3 {
+  margin-right: 5mm;
+  color: var(--muted);
+  font-size: 9.5pt;
+}
+
+.toc a {
+  color: inherit;
+  text-decoration: none;
+}
+
+article > h2 {
+  page-break-before: always;
+}
+
+article > h2:first-child {
+  page-break-before: auto;
+}
+
+h1, h2, h3, h4 {
+  break-after: avoid;
+  page-break-after: avoid;
+  color: #123544;
+  line-height: 1.45;
+}
+
+h2 {
+  margin: 0 0 7mm;
+  padding: 0 0 3.5mm;
+  border-bottom: 3px solid var(--green);
+  font-size: 21pt;
+}
+
+h3 {
+  margin: 9mm 0 4mm;
+  padding-right: 4mm;
+  border-right: 4px solid var(--accent);
+  font-size: 15.5pt;
+}
+
+h4 {
+  margin: 6mm 0 2.5mm;
+  color: var(--accent);
+  font-size: 12.5pt;
+}
+
+p {
+  margin: 0 0 4mm;
+  orphans: 3;
+  widows: 3;
+}
+
+.qa {
+  break-inside: avoid-page;
+  page-break-inside: avoid;
+}
+
+.qa > p:first-child {
+  margin-top: 5mm;
+}
+
+strong { color: #102e3b; }
+
+blockquote {
+  margin: 5mm 0;
+  padding: 4.5mm 6mm;
+  background: #edf7f3;
+  border-right: 5px solid var(--green);
+  color: #173e31;
+  break-inside: avoid;
+}
+
+ul, ol {
+  margin: 2mm 0 5mm;
+  padding-right: 7mm;
+}
+
+li { margin-bottom: 1.5mm; }
+
+code {
+  direction: ltr;
+  unicode-bidi: isolate;
+  display: inline-block;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 9.2pt;
+  color: #075d77;
+  background: #edf3f5;
+  border-radius: 3px;
+  padding: 0.2mm 1.2mm;
+}
+
+pre {
+  direction: ltr;
+  text-align: left;
+  unicode-bidi: isolate;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 4mm 0 6mm;
+  padding: 4mm 5mm;
+  color: #edf6f7;
+  background: #172a34;
+  border-right: 5px solid var(--accent);
+  border-radius: 4px;
+  font: 8.5pt/1.55 Consolas, "Courier New", monospace;
+  break-inside: avoid;
+}
+
+pre code {
+  display: inline;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 4mm 0 7mm;
+  font-size: 8.8pt;
+  line-height: 1.55;
+  break-inside: auto;
+}
+
+thead { display: table-header-group; }
+tr { break-inside: avoid; }
+
+th, td {
+  padding: 2.5mm 3mm;
+  border: 1px solid var(--line);
+  vertical-align: top;
+  text-align: right;
+}
+
+th {
+  color: white;
+  background: #17495d;
+  font-weight: 700;
+}
+
+tbody tr:nth-child(even) { background: #f4f7f8; }
+
+a { color: var(--accent); }
+
+.content > p:first-of-type {
+  font-size: 11.7pt;
+}
+
+@media print {
+  a { text-decoration: none; }
+}
+</style>
+</head>
+<body>
+<section class="cover">
+  <div class="eyebrow">مشروع جامعي - Compiler2</div>
+  <h1>دليل مناقشة<br>مرحلة Code Generation</h1>
+  <h2>Flask Extraction, Jinja Rendering, Watcher, Java HTTP Server</h2>
+  <div class="stack">مرجع عملي للأسئلة الشفهية، خريطة الملفات، وسيناريو العرض أمام اللجنة</div>
+  <div class="meta">إعداد من محتوى المشروع الحالي - نسخة RTL عربية</div>
+</section>
+<section class="toc">
+  <h1>المحتويات</h1>
+  <div class="toc-list" id="toc"></div>
+</section>
+<article class="content"><p>هذا الدليل مخصص لشرح مرحلة Code Generation في مشروع Compiler2، وخصوصا جزء
+Flask، ثم صلته برندرة Jinja وJava HTTP Server والـ watcher.</p>
+<h2>الجواب المختصر الذي تبدأ به أمام اللجنة</h2>
+<blockquote>
+<p>مشروعنا لا يحول Python إلى machine code، بل يعمل كـ source-to-source
+compiler وstatic site generator. بعد نجاح Semantic Analysis، يأخذ
+<code>ContextExtractor</code> الـ Python AST ويستخدم <code>PyEval</code> لتنفيذ الجزء المدعوم من
+Python داخل Java. يستخرج global variables وFlask routes، ويحول كل
+<code>render_template</code> إلى <code>RenderJob</code> تحتوي اسم القالب والـ context. بعد ذلك
+يقرأ <code>JinjaRenderer</code> قالب Jinja، يحل inheritance وloops وconditions
+وexpressions، ثم يكتب HTML النهائي داخل <code>output</code>. الـ watcher يعيد هذه
+العملية عند تعديل ملفات المصدر، بينما Java server يعرض الخرج ويدعم CRUD
+دائمة: يحدّث قائمة المنتجات داخل <code>app.py</code> ثم ينتظر الـ watcher ليعيد
+compilation كاملة من Lexer حتى HTML.</p>
+</blockquote>
+<h2>المخطط الكامل</h2>
+<pre><code class="language-text">app.py
+  -&gt; FlaskLexer / FlaskParser
+  -&gt; Python AST (ProgramNode)
+  -&gt; Structural + Symbol + Scope + Semantic gates
+  -&gt; ContextExtractor
+       -&gt; PyEval
+       -&gt; globals
+       -&gt; RouteInfo
+       -&gt; RenderJob
+  -&gt; ProjectContext
+  -&gt; JinjaRenderer
+       -&gt; HTML/Jinja Lexer + Parser
+       -&gt; HTML AST
+       -&gt; JinjaTemplateModel
+       -&gt; inheritance + expressions + loops + conditions
+  -&gt; output/*.html
+  -&gt; compiler_output/* reports
+</code></pre>
+<h2>خريطة الملفات التي يجب معرفتها</h2>
+<table>
+<thead>
+<tr>
+<th>الملف</th>
+<th>وظيفته</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>src/compilers/pipeline/GenerationPipeline.java</code></td>
+<td>المنسق الرئيسي لكل مراحل التوليد</td>
+</tr>
+<tr>
+<td><code>src/compilers/pipeline/GenerationResult.java</code></td>
+<td>النتيجة النهائية: exit code، الصفحات، diagnostics، ProjectContext والمسارات</td>
+</tr>
+<tr>
+<td><code>src/compilers/flask/generation/ContextExtractor.java</code></td>
+<td>استخراج globals وroutes وRenderJobs من Python AST</td>
+</tr>
+<tr>
+<td><code>src/compilers/flask/generation/PyEval.java</code></td>
+<td>مفسر صغير للجزء المدعوم من Python AST داخل Java</td>
+</tr>
+<tr>
+<td><code>src/compilers/flask/generation/ProjectContext.java</code></td>
+<td>الحاوية النهائية لنتيجة استخراج Flask</td>
+</tr>
+<tr>
+<td><code>src/compilers/flask/generation/RouteInfo.java</code></td>
+<td>تمثيل route: endpoint، path، methods، function AST</td>
+</tr>
+<tr>
+<td><code>src/compilers/flask/generation/RenderJob.java</code></td>
+<td>مهمة رندرة: template، context، endpoint، output name</td>
+</tr>
+<tr>
+<td><code>src/compilers/html_css/render/JinjaRenderer.java</code></td>
+<td>تحويل template + context إلى HTML نصي</td>
+</tr>
+<tr>
+<td><code>src/compilers/html_css/render/JinjaTemplateModel.java</code></td>
+<td>تحويل HTML/Jinja AST إلى عقد سهلة للرندرة</td>
+</tr>
+<tr>
+<td><code>src/compilers/html_css/render/JinjaExprEvaluator.java</code></td>
+<td>تقييم <code>{{ expression }}</code> وشروط Jinja والفلاتر</td>
+</tr>
+<tr>
+<td><code>src/compilers/html_css/render/TemplateInheritance.java</code></td>
+<td>حل <code>extends</code> واختيار blocks التي تعمل override</td>
+</tr>
+<tr>
+<td><code>src/compilers/report/GenerationLog.java</code></td>
+<td>بناء generation log بترتيب المراحل</td>
+</tr>
+<tr>
+<td><code>src/compilers/report/AstJsonWriter.java</code></td>
+<td>كتابة Python AST وJinja AST كـ JSON</td>
+</tr>
+<tr>
+<td><code>src/compilers/report/SemanticReportWriter.java</code></td>
+<td>كتابة semantic report</td>
+</tr>
+<tr>
+<td><code>src/compilers/report/GenerationReportWriter.java</code></td>
+<td>كتابة dashboard باسم <code>report.html</code></td>
+</tr>
+<tr>
+<td><code>src/compilers/pipeline/ProjectWatcher.java</code></td>
+<td>مراقبة ملفات المصدر وتشغيل compilation كاملة عند الحفظ</td>
+</tr>
+<tr>
+<td><code>src/compilers/server/CompilerWebServer.java</code></td>
+<td>عرض ملفات output واستقبال CRUD وانتظار نتيجة watcher</td>
+</tr>
+<tr>
+<td><code>src/compilers/server/PythonSourceCollectionWriter.java</code></td>
+<td>إيجاد assignment القائمة عبر Parser وتحديثها داخل app.py كتابة ذرّية</td>
+</tr>
+<tr>
+<td><code>src/Main/LiveProjectMain.java</code></td>
+<td>تشغيل server + watcher + compiler معا</td>
+</tr>
+<tr>
+<td><code>src/Main/WatchProjectMain.java</code></td>
+<td>تشغيل compiler + watcher دون web server</td>
+</tr>
+<tr>
+<td><code>src/Main/UnifiedMain.java</code></td>
+<td>CLI وتشغيل GenerationPipeline مرة واحدة</td>
+</tr>
+</tbody></table>
+<h2>أين توجد الأشياء المهمة تحديدا؟</h2>
+<table>
+<thead>
+<tr>
+<th>السؤال</th>
+<th>المكان في الكود</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>أين تبدأ Code Generation؟</td>
+<td><code>GenerationPipeline.run()</code></td>
+</tr>
+<tr>
+<td>أين يبدأ Flask extraction؟</td>
+<td><code>GenerationPipeline</code> عند إنشاء <code>ContextExtractor</code>، قرب السطر 180</td>
+</tr>
+<tr>
+<td>أين تُخزن المتغيرات العامة؟</td>
+<td><code>ContextExtractor.moduleEnv</code>، قرب السطر 74</td>
+</tr>
+<tr>
+<td>أين تُنفذ assignments؟</td>
+<td><code>PyEval.execAssignment()</code>، قرب السطر 247</td>
+</tr>
+<tr>
+<td>أين تُخزن القيمة باسم المتغير؟</td>
+<td><code>PyEval.store()</code>، قرب السطر 335</td>
+</tr>
+<tr>
+<td>أين تُقرأ قيمة identifier؟</td>
+<td><code>PyEval.lookup()</code>، قرب السطر 509</td>
+</tr>
+<tr>
+<td>أين تتحول Python list/dict إلى Java؟</td>
+<td><code>PyEval.eval()</code>، قرب السطر 391</td>
+</tr>
+<tr>
+<td>أين تُسجل functions؟</td>
+<td><code>ContextExtractor.registerFunction()</code> ثم <code>PyEval.registerFunction()</code></td>
+</tr>
+<tr>
+<td>أين تُكتشف decorators والـ routes؟</td>
+<td><code>ContextExtractor.tryRoute()</code>، قرب السطر 197</td>
+</tr>
+<tr>
+<td>أين تُنفذ route functions؟</td>
+<td><code>ContextExtractor.evaluateRoute()</code>، قرب السطر 250</td>
+</tr>
+<tr>
+<td>أين يُعالج <code>request.method</code>؟</td>
+<td><code>PyEval.condition()</code> في lenient route mode، قرب السطر 277</td>
+</tr>
+<tr>
+<td>أين يتم fallback إذا تعذر تنفيذ route؟</td>
+<td><code>ContextExtractor.staticFallback()</code>، قرب السطر 314</td>
+</tr>
+<tr>
+<td>أين تُعترض <code>render_template</code>؟</td>
+<td><code>ContextExtractor.ExtractionCalls.intercept()</code>، قرب السطر 381</td>
+</tr>
+<tr>
+<td>أين تُعترض <code>Flask()</code> و<code>url_for()</code>؟</td>
+<td>نفس <code>ExtractionCalls.intercept()</code></td>
+</tr>
+<tr>
+<td>أين يُتجاهل <code>app.run()</code>؟</td>
+<td><code>ExtractionCalls.interceptMethod()</code>، قرب السطر 423</td>
+</tr>
+<tr>
+<td>أين تتكون ProjectContext؟</td>
+<td>نهاية <code>ContextExtractor.extract()</code>، قرب السطر 112</td>
+</tr>
+<tr>
+<td>أين يتحول اسم template إلى output name؟</td>
+<td><code>RenderJob.getOutputFileName()</code></td>
+</tr>
+<tr>
+<td>أين تبدأ Jinja rendering؟</td>
+<td><code>JinjaRenderer.render()</code>، قرب السطر 77</td>
+</tr>
+<tr>
+<td>أين يُقرأ ويُحلل ملف template؟</td>
+<td><code>JinjaRenderer.load()</code>، قرب السطر 294</td>
+</tr>
+<tr>
+<td>أين تنفذ <code>{{ value }}</code>؟</td>
+<td><code>JinjaRenderer.renderNode()</code> + <code>JinjaExprEvaluator</code></td>
+</tr>
+<tr>
+<td>أين تنفذ <code>{% if %}</code>؟</td>
+<td><code>JinjaRenderer.renderIf()</code>، قرب السطر 169</td>
+</tr>
+<tr>
+<td>أين تنفذ <code>{% for %}</code>؟</td>
+<td><code>JinjaRenderer.renderFor()</code>، قرب السطر 192</td>
+</tr>
+<tr>
+<td>أين تُحل template inheritance؟</td>
+<td><code>TemplateInheritance.resolve()</code></td>
+</tr>
+<tr>
+<td>أين يُحل <code>url_for</code>؟</td>
+<td><code>GenerationPipeline.routeHrefs()</code> و<code>JinjaRenderer.resolveUrl()</code></td>
+</tr>
+<tr>
+<td>أين يُكتب HTML؟</td>
+<td><code>GenerationPipeline</code> بعد <code>renderer.render()</code>، قرب السطر 204</td>
+</tr>
+<tr>
+<td>أين تُنسخ CSS/JS/assets؟</td>
+<td><code>GenerationPipeline.copySupportFiles()</code>، قرب السطر 354</td>
+</tr>
+<tr>
+<td>أين تُكتب التقارير؟</td>
+<td><code>GenerationPipeline.finish()</code>، قرب السطر 454</td>
+</tr>
+<tr>
+<td>أين يعمل watcher؟</td>
+<td><code>ProjectWatcher.watch()</code></td>
+</tr>
+<tr>
+<td>أين يبدأ السيرفر؟</td>
+<td><code>CompilerWebServer.start()</code></td>
+</tr>
+<tr>
+<td>أين توجد CRUD؟</td>
+<td><code>CompilerWebServer.handleCollectionRequest()</code></td>
+</tr>
+<tr>
+<td>أين يُعدّل app.py؟</td>
+<td><code>PythonSourceCollectionWriter.write()</code></td>
+</tr>
+<tr>
+<td>أين ينتظر السيرفر إعادة التوليد؟</td>
+<td><code>CompilerWebServer.awaitRebuild()</code></td>
+</tr>
+</tbody></table>
+<h2>سيناريو المشروع الحالي خطوة بخطوة</h2>
+<h3>1. ما الذي يصل إلى Code Generation؟</h3>
+<p>يصل <code>ProgramNode</code> صالح بعد Semantic Analysis. إذا وجد <code>DiagnosticReporter</code>
+أي Error، تتوقف العملية قبل Context Extraction. الـ warning وحده لا يمنع
+التوليد.</p>
+<h3>2. ماذا يفعل ContextExtractor أولا؟</h3>
+<p>ينشئ <code>moduleEnv</code> ويضع:</p>
+<pre><code class="language-text">__name__    -&gt; &quot;__main__&quot;
+__package__ -&gt; &quot;&quot;
+</code></pre>
+<p>ثم ينشئ <code>PyEval(moduleEnv, new ExtractionCalls())</code>.</p>
+<h3>3. ما الفرق بين PyEval وExtractionCalls؟</h3>
+<p><code>PyEval</code> ينفذ Python العام مثل assignment وif وfor والدوال والعمليات.
+<code>ExtractionCalls</code> هي interceptor للأشياء الخاصة بـ Flask مثل <code>Flask()</code> و
+<code>render_template()</code> و<code>url_for()</code> و<code>app.run()</code>.</p>
+<h3>4. ماذا يحدث مع Flask imports؟</h3>
+<p>لا يتم استيراد Flask الحقيقي. تُسجل الأسماء كـ <code>UnsupportedRef</code>، وعندما يتم
+استدعاؤها يرسلها <code>PyEval</code> إلى <code>ExtractionCalls</code>.</p>
+<h3>5. ماذا يحدث مع <code>app = Flask(__name__)</code>؟</h3>
+<p>يعترض <code>ExtractionCalls</code> استدعاء <code>Flask</code> ويرجع <code>FlaskApp</code> marker. تُخزن:</p>
+<pre><code class="language-text">app -&gt; FlaskApp marker
+</code></pre>
+<p>لا يتم تشغيل Flask الحقيقي.</p>
+<h3>6. كيف تُستخرج store_name وproducts؟</h3>
+<p>ينفذ <code>PyEval</code> assignments. يتحول Python string إلى Java <code>String</code>، وتتحول
+Python list إلى <code>ArrayList</code>، وكل dict إلى <code>LinkedHashMap</code>.</p>
+<pre><code class="language-text">store_name -&gt; &quot;Products Store&quot;
+products   -&gt; List&lt;Map&gt;[3]
+</code></pre>
+<h3>7. ماذا يحدث مع product_count؟</h3>
+<p>يسجل <code>PyEval</code> الدالة كـ <code>UserFunction</code> ولا ينفذها عند تعريفها. عند الوصول
+لاحقا إلى <code>product_count(products)</code> ينشئ local frame، ينفذ loop وreturn،
+فتكون النتيجة 3.</p>
+<h3>8. كيف تُكتشف routes؟</h3>
+<p>يفحص <code>ContextExtractor.tryRoute()</code> decorators من أشكال:</p>
+<pre><code class="language-python">@app.route(&quot;/&quot;, methods=[&quot;GET&quot;])
+@app.get(&quot;/path&quot;)
+@app.post(&quot;/path&quot;)
+</code></pre>
+<p>وينشئ <code>RouteInfo</code> لكل route.</p>
+<h3>9. ماذا تحتوي RouteInfo؟</h3>
+<pre><code class="language-text">endpoint -&gt; اسم view function
+path     -&gt; مسار HTTP
+methods  -&gt; GET/POST
+function -&gt; FunctionDefNode الخاص بالـ view
+</code></pre>
+<h3>10. ماذا يحدث مع app.run؟</h3>
+<p>يتم تقييم شرط <code>__name__ == &quot;__main__&quot;</code>، لكن <code>app.run()</code> يُعترض ويصبح no-op.
+هدف compilation استخراج الصفحات، لا تشغيل Flask server.</p>
+<h3>11. كيف تُنفذ route؟</h3>
+<p>في المرور الثاني، يستدعي <code>ContextExtractor.evaluateRoute()</code> كل view كدالة
+بدون arguments داخل local frame مستقل، ثم يراقب أي <code>render_template</code> تحدث.</p>
+<h3>12. ماذا يحدث في index route؟</h3>
+<p>يقيّم:</p>
+<pre><code class="language-python">render_template(
+    &quot;index.jinja&quot;,
+    title=store_name,
+    products=products,
+    count=product_count(products)
+)
+</code></pre>
+<p>فتصبح القيم:</p>
+<pre><code class="language-text">template = index.jinja
+title    = Products Store
+products = List[3]
+count    = 3
+</code></pre>
+<p>ثم ينشئ <code>RenderJob</code>.</p>
+<h3>13. ماذا يحدث مع request.method؟</h3>
+<p>لا يوجد HTTP request أثناء static compilation. إذا لم يستطع <code>PyEval</code> تقييم
+شرط route مثل <code>request.method == &quot;POST&quot;</code>، يسجل warning ويعامل الشرط كـ False،
+وبذلك يولد مسار GET الافتراضي.</p>
+<h3>14. ماذا لو تعذر تنفيذ route كلها؟</h3>
+<p>يستخدم <code>staticFallback()</code>، يبحث في AST عن آخر <code>render_template</code>، ويقيّم ما
+يمكن تقييمه. أي context يعتمد على request يُحذف مع warning. إذا لم يكن اسم
+القالب قابلا للتحديد، يصدر Code Generation Error.</p>
+<h3>15. ماذا تحتوي RenderJob؟</h3>
+<pre><code class="language-text">templateName
+context Map&lt;String,Object&gt;
+endpoint
+line / column
+outputFileName
+</code></pre>
+<p><code>index.jinja</code> تتحول إلى <code>index.html</code> بواسطة <code>getOutputFileName()</code>.</p>
+<h3>16. ماذا تحتوي ProjectContext؟</h3>
+<pre><code class="language-text">globals
+routes
+renderJobs
+extraction log lines
+</code></pre>
+<p>هذه هي نقطة التسليم بين Flask Code Generation وJinja Code Generation.</p>
+<h2>Jinja Code Generation باختصار دقيق</h2>
+<ol>
+<li>يبني <code>GenerationPipeline</code> خريطة endpoint إلى href.</li>
+<li>ينشئ <code>JinjaRenderer(reporter, templateRoot, routeHrefs)</code>.</li>
+<li>يمر على كل <code>RenderJob</code>.</li>
+<li>يقرأ القالب من <code>templates/</code>.</li>
+<li>يشغّل HTML/Jinja lexer وparser ويبني HTML AST.</li>
+<li>يحول AST إلى <code>JinjaTemplateModel</code>.</li>
+<li>يحل سلسلة <code>{% extends %}</code>.</li>
+<li>يضع context في frame داخل <code>JinjaExprEvaluator</code>.</li>
+<li>يرندر Text وOutput وIf وFor وBlock nodes.</li>
+<li>يعيد HTML كـ String.</li>
+<li>يكتب <code>output/&lt;page&gt;.html</code> بترميز UTF-8.</li>
+</ol>
+<h2>بنك الأسئلة والأجوبة</h2>
+<h3>أسئلة المفهوم العام</h3>
+<p><strong>س1: ما المقصود بـ Code Generation في مشروعكم؟</strong></p>
+<p>ج: تحويل Flask/Python AST مع Jinja templates إلى صفحات HTML ثابتة وتقارير،
+وليس توليد machine code.</p>
+<p><strong>س2: ما مدخل ومخرج قسم Flask؟</strong></p>
+<p>ج: المدخل <code>ProgramNode</code> صالح دلاليا، والمخرج <code>ProjectContext</code> تحتوي globals
+وroutes وRenderJobs.</p>
+<p><strong>س3: هل تشغلون Python أو Flask الحقيقي؟</strong></p>
+<p>ج: لا. <code>PyEval</code> يفسر subset من Python AST داخل Java، و<code>ExtractionCalls</code>
+تعترض عمليات Flask المهمة.</p>
+<p><strong>س4: لماذا لم تشغلوا Flask الحقيقي؟</strong></p>
+<p>ج: لأن المطلوب compiler deterministic يستخرج صفحات ثابتة. تشغيل Flask
+الحقيقي يحتاج Python runtime وrequest lifecycle وسيحول المرحلة إلى تشغيل
+تطبيق، لا Code Generation.</p>
+<p><strong>س5: من هو المنسق الرئيسي؟</strong></p>
+<p>ج: <code>GenerationPipeline</code>. يرتب parse، semantic gates، context extraction،
+Jinja rendering، نسخ الدعم وكتابة التقارير.</p>
+<p><strong>س6: متى تتوقف Code Generation؟</strong></p>
+<p>ج: تتوقف قبل extraction عند semantic errors، وتتوقف برمز 2 عند extraction
+أو template structural errors. Warnings لا تمنع الخرج.</p>
+<h3>أسئلة Context Extraction وPyEval</h3>
+<p><strong>س7: أين استخراج المتغيرات العامة؟</strong></p>
+<p>ج: في <code>ContextExtractor.executeTopLevel()</code> باستخدام <code>PyEval.exec()</code>، وتُحفظ
+القيم في <code>ContextExtractor.moduleEnv</code>.</p>
+<p><strong>س8: أين ينفذ assignment؟</strong></p>
+<p>ج: <code>PyEval.execAssignment()</code> يحسب RHS بواسطة <code>eval()</code> ثم يخزنها بواسطة
+<code>store()</code>.</p>
+<p><strong>س9: كيف تتحول قيم Python إلى Java؟</strong></p>
+<p>ج: int إلى <code>BigInteger</code>، float إلى <code>Double</code>، string إلى <code>String</code>، None إلى
+<code>null</code>، list/tuple إلى <code>ArrayList</code>، dict إلى <code>LinkedHashMap</code>، set إلى
+<code>LinkedHashSet</code>.</p>
+<p><strong>س10: لماذا تستخدمون LinkedHashMap؟</strong></p>
+<p>ج: للحفاظ على ترتيب الإدخال، وهذا يجعل context والخرج والتقارير deterministic.</p>
+<p><strong>س11: كيف تعمل scopes أثناء التقييم؟</strong></p>
+<p>ج: <code>PyEval</code> يملك stack من Frames. كل function call يدفع local frame، والبحث
+يبدأ محليا ثم يصل إلى module environment، وبعد return يُزال frame.</p>
+<p><strong>س12: هل يستخدم PyEval الـ SymbolTable؟</strong></p>
+<p>ج: لا. SymbolTable استُخدمت في Semantic Analysis. التقييم يستخدم frame chain
+وقيم Java فعلية، حتى تبقى حدود التوليد بسيطة.</p>
+<p><strong>س13: ما أوامر Python المدعومة؟</strong></p>
+<p>ج: assignments، if/for/while، return/break/continue، functions، arithmetic،
+comparisons، lists/dicts/subscripts، وعدد من built-ins وmethods.</p>
+<p><strong>س14: كيف تمنعون loop لا نهائية أثناء التوليد؟</strong></p>
+<p>ج: <code>PyEval</code> يحدد 200000 evaluation steps، و64 call depth، و100000 عنصر كحد
+أقصى لـ range.</p>
+<p><strong>س15: ماذا يحدث لشيء Python غير مدعوم؟</strong></p>
+<p>ج: يرمي <code>PyEval.EvalError</code>. يحوله <code>ContextExtractor</code> إلى diagnostic أو يستخدم
+static fallback إذا كانت المشكلة داخل route.</p>
+<p><strong>س16: أين تُسجل functions؟</strong></p>
+<p>ج: <code>ContextExtractor.registerFunction()</code> يستدعي <code>PyEval.registerFunction()</code>،
+فتُحفظ FunctionDefNode والـ default values.</p>
+<p><strong>س17: متى تُحسب default arguments؟</strong></p>
+<p>ج: وقت تسجيل function، مثل سلوك Python في حساب defaults وقت التعريف.</p>
+<h3>أسئلة Flask Routes وrender_template</h3>
+<p><strong>س18: كيف تعرفون أن function هي route؟</strong></p>
+<p>ج: <code>tryRoute()</code> يفحص decorator ويبحث عن method باسم <code>route</code> أو <code>get</code> أو
+<code>post</code>، ثم يقيّم path وmethods.</p>
+<p><strong>س19: ما هو endpoint؟</strong></p>
+<p>ج: اسم view function افتراضيا، مثل <code>index</code> أو <code>add_product</code>، ويستخدم في
+<code>url_for</code>.</p>
+<p><strong>س20: أين تحفظ routes؟</strong></p>
+<p>ج: في <code>ContextExtractor.routes</code> كـ <code>Map&lt;String, RouteInfo&gt;</code> مرتبة حسب التعريف.</p>
+<p><strong>س21: كيف تتحول render_template إلى RenderJob؟</strong></p>
+<p>ج: يعترضها <code>ExtractionCalls.intercept()</code>. يأخذ أول positional argument كاسم
+template، والـ keyword arguments كـ context، ويربط المهمة بـ currentEndpoint.</p>
+<p><strong>س22: لماذا اسم template يجب أن يكون قابلا للتقييم؟</strong></p>
+<p>ج: لأن المولد يجب أن يعرف أي ملف يقرأ أثناء compilation. اسم يعتمد كليا على
+request لا يمكن تحويله بأمان إلى صفحة ثابتة.</p>
+<p><strong>س23: ماذا لو route لا ترندر template؟</strong></p>
+<p>ج: تُسجل أنها skipped ولا تُنشأ لها صفحة.</p>
+<p><strong>س24: ماذا لو اكتشف أكثر من render_template في route؟</strong></p>
+<p>ج: يسجل note ويحتفظ بآخر RenderJob تم التقاطها لمسار GET الذي تم تقييمه.</p>
+<p><strong>س25: لماذا request.method يصبح False؟</strong></p>
+<p>ج: لا يوجد request أثناء static generation. في lenient route mode، الشرط غير
+القابل للتقييم يسجل warning ويعامل كـ False لاختيار GET view.</p>
+<p><strong>س26: أين تُحذف markers من globals؟</strong></p>
+<p>ج: <code>ContextExtractor.publicGlobals()</code> يستبعد <code>ModuleRef</code> و<code>FlaskApp</code> و
+<code>UnsupportedRef</code> و<code>__name__</code> و<code>__package__</code>.</p>
+<p><strong>س27: ما الفرق بين RouteInfo وRenderJob؟</strong></p>
+<p>ج: <code>RouteInfo</code> تصف HTTP route ودالتها. <code>RenderJob</code> تصف صفحة يجب رندرتها مع
+template وcontext.</p>
+<p><strong>س28: ما فائدة ProjectContext؟</strong></p>
+<p>ج: عقد واضح بين نصف Flask ونصف Jinja، ويستخدمه أيضا Java server كـ successful
+compilation snapshot.</p>
+<h3>أسئلة Jinja Rendering</h3>
+<p><strong>س29: أين تبدأ الرندرة الفعلية؟</strong></p>
+<p>ج: <code>GenerationPipeline</code> يستدعي <code>JinjaRenderer.render(templateName, context)</code>
+لكل RenderJob.</p>
+<p><strong>س30: هل تتعاملون مع Jinja كنص فقط؟</strong></p>
+<p>ج: لا. يتم lex/parse للقالب وبناء HTML/Jinja AST، ثم <code>JinjaTemplateModel</code>،
+وبعدها tree rendering.</p>
+<p><strong>س31: كيف تعمل template inheritance؟</strong></p>
+<p>ج: <code>TemplateInheritance.resolve()</code> يبني chain من child إلى base. يبدأ الرسم
+من base tree، وعند block يبحث <code>lookupBlock()</code> عن أقرب override من child.</p>
+<p><strong>س32: كيف تعمل <code>{{ title }}</code>؟</strong></p>
+<p>ج: <code>renderNode()</code> يرسل expression إلى <code>JinjaExprEvaluator</code>، يحول القيمة إلى
+نص، يطبق HTML escaping، ثم يضيفها إلى StringBuilder.</p>
+<p><strong>س33: كيف تعمل <code>{% for product in products %}</code>؟</strong></p>
+<p>ج: <code>renderFor()</code> يقيّم iterable، ثم ينشئ frame لكل عنصر يحتوي <code>product</code> و
+<code>loop.index/index0/first/last/length</code> ويرندر body.</p>
+<p><strong>س34: كيف تعمل <code>{% if %}</code>؟</strong></p>
+<p>ج: <code>renderIf()</code> يقيّم الفروع بالترتيب مستخدما Python/Jinja truthiness ويرندر
+أول branch نتيجته True، وإلا يرندر else.</p>
+<p><strong>س35: كيف يصل <code>product.name</code> إلى dict؟</strong></p>
+<p>ج: <code>JinjaExprEvaluator</code> يتعامل مع attribute access على Map كمفتاح باسم
+<code>name</code>.</p>
+<p><strong>س36: ما الفلاتر المدعومة؟</strong></p>
+<p>ج: <code>default</code> و<code>upper</code> و<code>lower</code> و<code>title</code> و<code>length</code>.</p>
+<p><strong>س37: هل تطبقون HTML escaping؟</strong></p>
+<p>ج: نعم افتراضيا في <code>JinjaExprEvaluator.escapeHtml()</code> لحماية <code>&amp; &lt; &gt; &quot; &#39;</code>.</p>
+<p><strong>س38: كيف يعمل url_for؟</strong></p>
+<p>ج: يبني Pipeline خريطة endpoint إلى generated filename. <code>url_for(&#39;index&#39;)</code>
+يصبح <code>index.html</code>، و<code>url_for(&#39;static&#39;, filename=&#39;style.css&#39;)</code> يصبح اسم الملف.</p>
+<p><strong>س39: ماذا يحدث إذا كان endpoint مجهولا؟</strong></p>
+<p>ج: يصدر Jinja value warning، ويستمر توليد الصفحة بقيمة فارغة لذلك الموضع.</p>
+<p><strong>س40: ما الفرق بين Jinja value error وstructural error؟</strong></p>
+<p>ج: value error مثل variable غير معرّف هو warning ويُترك output فارغا. structural
+error مثل blocks غير متوازنة أو template مفقود يمنع كتابة الصفحة.</p>
+<h3>أسئلة الخرج والتقارير</h3>
+<p><strong>س41: أين تُكتب الصفحة؟</strong></p>
+<p>ج: في <code>GenerationPipeline</code> بعد عودة HTML String، باستخدام
+<code>outputDir.resolve(job.getOutputFileName())</code> وUTF-8.</p>
+<p><strong>س42: كيف تمنعون templateين من الكتابة فوق نفس الملف؟</strong></p>
+<p>ج: <code>validateOutputNames()</code> يفحص كل RenderJobs قبل الرندرة ويصدر error عند
+collision.</p>
+<p><strong>س43: لماذا تحذف الصفحات القديمة أولا؟</strong></p>
+<p>ج: <code>cleanGeneratedPages()</code> يزيل HTML المولّد القديم حتى لا تبقى صفحة stale
+بعد تغيير routes أو فشل rerender.</p>
+<p><strong>س44: ماذا يُنسخ إلى output؟</strong></p>
+<p>ج: <code>app.py</code> و<code>style.css</code> و<code>script.js</code>، مع mirror recursive لمجلدات
+<code>templates</code> و<code>static</code> و<code>assets</code>.</p>
+<p><strong>س45: ما التقارير الناتجة؟</strong></p>
+<p>ج: <code>ast_python.json</code> و<code>ast_jinja.json</code> و<code>semantic_report.txt</code> و
+<code>generation_log.txt</code> و<code>report.html</code>.</p>
+<p><strong>س46: ما exit codes؟</strong></p>
+<p>ج: 0 نجاح، 1 فشل frontend/semantic، 2 فشل extraction/rendering، 3 خطأ CLI أو
+تشغيل داخلي عند نقطة الدخول.</p>
+<h3>أسئلة Watcher</h3>
+<p><strong>س47: ما وظيفة watcher؟</strong></p>
+<p>ج: مراقبة ملفات المصدر وتشغيل <code>new GenerationPipeline().run(paths)</code> عند أي
+تغيير مدعوم.</p>
+<p><strong>س48: ماذا يراقب؟</strong></p>
+<p>ج: <code>.py/.html/.jinja/.j2/.css/.js</code> والصور والخطوط، ومجلدات templates/static/assets
+بشكل recursive.</p>
+<p><strong>س49: لماذا يتجاهل output وcompiler_output؟</strong></p>
+<p>ج: لأن compiler يكتب فيهما. مراقبتهما تسبب feedback loop وإعادة توليد لا
+نهائية.</p>
+<p><strong>س50: لماذا debounce لمدة 300ms؟</strong></p>
+<p>ج: IntelliJ قد يولد عدة file events لعملية Save واحدة؛ debounce يجمعها في
+rebuild واحدة.</p>
+<p><strong>س51: من أين يعيد watcher المراحل؟</strong></p>
+<p>ج: يعيد pipeline كاملة من Python Lexer حتى HTML، لأن أي source change قد
+يؤثر في AST أو semantics أو context أو القالب.</p>
+<p><strong>س52: هل watcher يعمل browser refresh؟</strong></p>
+<p>ج: لا. يعيد الملفات فقط. المستخدم يعمل refresh، ولا يوجد SSE أو WebSocket.</p>
+<h3>أسئلة Java Web Server وCRUD</h3>
+<p><strong>س53: هل Java server هو Flask server؟</strong></p>
+<p>ج: لا. هو <code>com.sun.net.httpserver.HttpServer</code> يعرض الملفات المولدة ويقدم API
+صغيرة. لا يشغل app.py ولا ينفذ Flask request lifecycle.</p>
+<p><strong>س54: ماذا يفعل GET للصفحات؟</strong></p>
+<p>ج: <code>handleStaticFile()</code> يقرأ الملف من output، يتحقق من path traversal، يحدد
+Content-Type، ويرسله مع <code>Cache-Control: no-store</code>.</p>
+<p><strong>س55: ما API المتاحة؟</strong></p>
+<p>ج:</p>
+<pre><code class="language-text">GET    /api/products
+GET    /api/products/{id}
+POST   /api/products
+PUT    /api/products/{id}
+DELETE /api/products/{id}
+</code></pre>
+<p><strong>س56: أين تُحفظ تعديلات الواجهة؟</strong></p>
+<p>ج: تُكتب فعلياً داخل assignment القائمة في <code>app.py</code>. أما <code>liveGlobals</code> فهي
+نسخة قراءة من آخر compilation ناجحة يستخدمها GET والتحقق من النتيجة.</p>
+<p><strong>س57: هل PUT/DELETE يعدلان app.py؟</strong></p>
+<p>ج: نعم. يبني السيرفر القائمة الجديدة ثم يستدعي
+<code>PythonSourceCollectionWriter.write()</code> لاستبدال قيمة القائمة فقط داخل الملف.</p>
+<p><strong>س58: هل POST/PUT/DELETE تعيد Lexer وParser؟</strong></p>
+<p>ج: نعم. لأنها أصبحت تعدل source الحقيقي، يلتقط watcher تغيير <code>app.py</code> ويعيد
+Lexer ثم Parser وAST وSemantic وContext وJinja حتى HTML.</p>
+<p><strong>س59: كيف تختارون المنتج؟</strong></p>
+<p>ج: كل product يملك <code>id</code>. المسار <code>/api/products/{id}</code> يبحث عن Map التي يساوي
+حقل <code>id</code> فيها id المطلوب.</p>
+<p><strong>س60: كيف تمنعون حالة بيانات فاسدة إذا فشلت الرندرة؟</strong></p>
+<p>ج: لا يغيّر السيرفر live snapshot مباشرة. الكاتب يبني الملف كاملاً ويفحصه
+بالـ Parser قبل atomic replace. وبعد الحفظ ينتظر السيرفر compilation ناجحة؛
+وعند الفشل يحتفظ <code>acceptCompilation()</code> بآخر snapshot ناجحة ويعيد HTTP error.</p>
+<p><strong>س61: ماذا يفعل PythonSourceCollectionWriter؟</strong></p>
+<p>ج: يحلل <code>app.py</code> بغرامر المشروع، يجد top-level assignment الذي يطابق اسم
+القائمة، يولّد Python literal للقيم الجديدة، يستبدل RHS فقط، يعيد فحص الملف،
+ثم يكتبه UTF-8 بملف مؤقت وatomic move.</p>
+<p><strong>س62: لماذا stateLock وmutationLock؟</strong></p>
+<p>ج: <code>stateLock</code> يحمي compilation snapshot وliveGlobals والتواصل مع callback
+الـ watcher. و<code>mutationLock</code> يمنع طلبي CRUD من الكتابة على <code>app.py</code> معاً.</p>
+<p><strong>س63: كيف يعرف طلب CRUD أن إعادة التوليد انتهت؟</strong></p>
+<p>ج: يحفظ رقم آخر compilation قبل الكتابة ثم ينتظر <code>acceptCompilation(result)</code>.
+عندما تصل نتيجة ناجحة وتساوي القائمة المستخرجة القيم المطلوبة، يكمل الطلب
+ويرسل redirect أو 204. توجد مهلة زمنية ورسالة خطأ واضحة إذا لم يؤكد watcher.</p>
+<p><strong>س64: كيف تعمل صفحة Edit؟</strong></p>
+<p>ج: رابط Edit يحمل id في data attribute. <code>script.js</code> يفتح
+<code>edit_product.html?id=...</code>، ثم GET يجلب المنتج، وsubmit يرسل PUT، وبعد النجاح
+تعود الصفحة إلى index.</p>
+<p><strong>س65: كيف يعمل Delete؟</strong></p>
+<p>ج: <code>script.js</code> يطلب تأكيدا ويرسل DELETE بالـ id. السيرفر يحذف العنصر من نسخة
+القائمة، يكتبها في <code>app.py</code>، ينتظر full rebuild، ثم يعود المتصفح إلى index.</p>
+<h3>أسئلة التصميم والدفاع عن المشروع</h3>
+<p><strong>س66: لماذا ProjectContext بيانات Java عادية؟</strong></p>
+<p>ج: لفصل Flask extraction عن Jinja renderer. الحد بينهما هو String/Number/
+Boolean/null/List/Map دون ربط renderer بعقد Python AST.</p>
+<p><strong>س67: لماذا تحتفظون بآخر successful snapshot؟</strong></p>
+<p>ج: حتى لا يستبدل compilation فاشل حالة السيرفر ببيانات ناقصة. <code>acceptCompilation</code>
+يقبل النتيجة فقط إذا كانت ناجحة ولها ProjectContext.</p>
+<p><strong>س68: هل المشروع يدعم Flask كله؟</strong></p>
+<p>ج: لا، يدعم subset تعليمي واضح. أي شيء خارج subset ينتج diagnostic أو warning
+بدلا من قيمة صامتة خاطئة.</p>
+<p><strong>س69: ما أهم حدود المشروع؟</strong></p>
+<p>ج: لا يوجد Flask runtime حقيقي، ولا database persistence، ولا route parameters
+متقدمة، ولا auto browser reload. الاستمرارية الحالية file-based داخل assignment
+قائمة واضحة في <code>app.py</code> وليست قاعدة بيانات عامة.</p>
+<p><strong>س70: ما الاختبارات التي تثبت Code Generation؟</strong></p>
+<p>ج: <code>ContextExtractionHarness</code> لاستخراج Flask، <code>JinjaRenderHarness</code> للرندرة،
+<code>GenerationEndToEndHarness</code> للخرج والتقارير، <code>ProjectWatcherHarness</code> للمراقبة،
+و<code>CompilerWebServerHarness</code> لطلبات HTTP وCRUD. المجموع الحالي 112 اختبارا.</p>
+<h2>سيناريو العرض أمام اللجنة</h2>
+<ol>
+<li>شغل <code>Main.LiveProjectMain</code> من IntelliJ.</li>
+<li>انتظر <code>Run #1 - INITIAL BUILD</code> و<code>RESULT: SUCCESS</code>.</li>
+<li>افتح <code>http://localhost:8080/index.html</code> وشاهد 3 products.</li>
+<li>عدل سعر منتج في <code>Tests/generation/sample_project/app.py</code> واعمل Save.</li>
+<li>اشرح أن watcher اكتشف الملف وأعاد Lexer -&gt; HTML.</li>
+<li>اعمل Refresh وشاهد السعر الجديد.</li>
+<li>أضف منتجا من الواجهة وافتح <code>app.py</code> لتري أن القائمة تغيرت فعليا.</li>
+<li>اشرح رسائل watcher: اكتشاف Python ثم Lexer -&gt; HTML ثم نجاح الطلب.</li>
+<li>عدل المنتج واحذفه واشرح PUT/DELETE بنفس المسار.</li>
+<li>أضف منتجا أخيرا، أوقف السيرفر وأعد تشغيله لتثبت أن التعديل بقي في app.py.</li>
+</ol>
+<h2>خمس جمل إن ضاع منك التفصيل</h2>
+<ol>
+<li><code>GenerationPipeline</code> هو المنسق الرئيسي.</li>
+<li><code>ContextExtractor + PyEval</code> يحولان Python AST إلى <code>ProjectContext</code>.</li>
+<li>كل <code>render_template</code> تصبح <code>RenderJob</code> فيها template وcontext.</li>
+<li><code>JinjaRenderer</code> يحول RenderJob إلى HTML ويكتبها Pipeline داخل output.</li>
+<li>watcher يعيد compilation عند source save، والسيرفر يعرض الخرج ويعمل CRUD
+دائمة بكتابة القائمة في app.py ثم انتظار full rebuild.</li>
+</ol>
+<h2>قاعدة مهمة في الإجابة</h2>
+<p>إذا سألوك عن أي وظيفة، ابدأ بهذا النمط:</p>
+<blockquote>
+<p>المسؤول هو <code>&lt;ClassName&gt;</code> داخل <code>&lt;path&gt;</code>. الدالة الأساسية هي <code>&lt;method&gt;</code>.
+تستلم <code>&lt;input&gt;</code>، تنفذ <code>&lt;behavior&gt;</code>، وتنتج <code>&lt;output&gt;</code>.</p>
+</blockquote>
+<p>مثال:</p>
+<blockquote>
+<p>المسؤول عن استخراج المتغيرات هو <code>ContextExtractor</code> داخل
+<code>src/compilers/flask/generation/ContextExtractor.java</code>. يمر على top-level
+statements بواسطة <code>executeTopLevel()</code>، ويستخدم <code>PyEval</code> لتنفيذ assignments،
+ثم يحفظ القيم في <code>moduleEnv</code> ويضع القيم العامة النهائية داخل <code>ProjectContext</code>.</p>
+</blockquote>
+</article>
+<script>
+const questionStarts = Array.from(document.querySelectorAll("article p")).filter((paragraph) => {
+  const strong = paragraph.firstElementChild;
+  return strong?.tagName === "STRONG" && /^س\d+:/u.test(strong.textContent.trim());
+});
+
+questionStarts.forEach((question) => {
+  const wrapper = document.createElement("section");
+  wrapper.className = "qa";
+  question.parentNode.insertBefore(wrapper, question);
+
+  let current = question;
+  while (current) {
+    const next = current.nextElementSibling;
+    wrapper.appendChild(current);
+    if (!next || next.matches("h2, h3") || questionStarts.includes(next)) break;
+    current = next;
+  }
+});
+
+const headings = Array.from(document.querySelectorAll("article h2, article h3"));
+const toc = document.getElementById("toc");
+headings.forEach((heading, index) => {
+  heading.id = "section-" + (index + 1);
+  const item = document.createElement("div");
+  item.className = "toc-item level-" + heading.tagName.substring(1);
+  const link = document.createElement("a");
+  link.href = "#" + heading.id;
+  link.textContent = heading.textContent;
+  item.appendChild(link);
+  toc.appendChild(item);
+});
+</script>
+</body>
+</html>

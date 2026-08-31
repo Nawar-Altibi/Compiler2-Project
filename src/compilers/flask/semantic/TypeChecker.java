@@ -122,12 +122,38 @@ public final class TypeChecker extends ScopedSemanticVisitor<SymbolType> {
     public SymbolType visitBinaryOp(BinaryOpNode node) {
         SymbolType leftType = safeType(node.getLeft().accept(this));
         SymbolType rightType = safeType(node.getRight().accept(this));
+        if (isZeroDivisor(node.getOperator(), node.getRight(), leftType, rightType)) {
+            reporter.report(Diagnostics.divisionByZero(
+                    node.getOperator(),
+                    node.getLine(),
+                    node.getColumn(),
+                    sourceFile));
+            return SymbolType.UNKNOWN;
+        }
         return evaluateBinary(
                 leftType,
                 node.getOperator(),
                 rightType,
                 node.getLine(),
                 node.getColumn());
+    }
+
+    private boolean isZeroDivisor(
+            String operator,
+            Expression right,
+            SymbolType leftType,
+            SymbolType rightType) {
+        if (!("/".equals(operator) || "//".equals(operator) || "%".equals(operator))
+                || !isNumeric(leftType)
+                || !isNumeric(rightType)
+                || !(right instanceof LiteralNode)) {
+            return false;
+        }
+        Object value = ((LiteralNode) right).getValue();
+        if (value instanceof Number) {
+            return Double.compare(((Number) value).doubleValue(), 0.0d) == 0;
+        }
+        return Boolean.FALSE.equals(value);
     }
 
     private SymbolType evaluateBinary(

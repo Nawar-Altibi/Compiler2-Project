@@ -5,6 +5,7 @@
 <meta charset="UTF-8" />
 <title>Products Store</title>
 <link rel="stylesheet" href="style.css" />
+<script src="script.js" defer></script>
 </head>
 <body>
 <header>
@@ -21,20 +22,30 @@
 <h3>1. Phone</h3>
 <p>A reliable phone</p>
 <p class="price">$300</p>
-<a href="edit_product.html">Edit</a>
+<div class="product-actions">
+<a href="edit_product.html" data-edit-product="1">Edit</a>
+<button type="button" class="danger" data-delete-product="1" data-product-name="Phone">Delete</button>
+</div>
 </div>
 <div class="product-card">
 <h3>2. Laptop</h3>
 <p>A fast laptop</p>
 <p class="price">$800</p>
 <span class="premium">Premium</span>
-<a href="edit_product.html">Edit</a>
+<div class="product-actions">
+<a href="edit_product.html" data-edit-product="2">Edit</a>
+<button type="button" class="danger" data-delete-product="2" data-product-name="Laptop">Delete</button>
+</div>
 </div>
 <div class="product-card">
 <h3>3. Headset</h3>
 <p>Comfortable headset</p>
-<p class="price">$50</p>
-<a href="edit_product.html">Edit</a>
+<p class="price">$3232</p>
+<span class="premium">Premium</span>
+<div class="product-actions">
+<a href="edit_product.html" data-edit-product="3">Edit</a>
+<button type="button" class="danger" data-delete-product="3" data-product-name="Headset">Delete</button>
+</div>
 </div>
 </div>
 </main>

@@ -75,12 +75,12 @@
               "kind": "JinjaExpression",
               "line": 4,
               "column": 17,
-              "expression": "count"
+              "expression": "products|length"
             },
             {
               "kind": "Text",
               "line": 4,
-              "column": 28,
+              "column": 38,
               "text": " products)"
             }
           ]
@@ -88,7 +88,7 @@
         {
           "kind": "Text",
           "line": 4,
-          "column": 43,
+          "column": 53,
           "text": "\n"
         },
         {
@@ -281,46 +281,128 @@
                   "kind": "Element",
                   "line": 14,
                   "column": 0,
-                  "tag": "a",
+                  "tag": "div",
                   "children": [
                     {
                       "kind": "Attribute",
                       "line": 14,
-                      "column": 3,
-                      "name": "href",
-                      "expression": "url_for('edit_product')"
+                      "column": 5,
+                      "name": "class",
+                      "value": "product-actions"
                     },
                     {
                       "kind": "Text",
                       "line": 14,
-                      "column": 40,
-                      "text": "Edit"
+                      "column": 29,
+                      "text": "\n"
+                    },
+                    {
+                      "kind": "Element",
+                      "line": 15,
+                      "column": 0,
+                      "tag": "a",
+                      "children": [
+                        {
+                          "kind": "Attribute",
+                          "line": 15,
+                          "column": 3,
+                          "name": "href",
+                          "expression": "url_for('edit_product')"
+                        },
+                        {
+                          "kind": "Attribute",
+                          "line": 15,
+                          "column": 40,
+                          "name": "data-edit-product",
+                          "expression": "product.id"
+                        },
+                        {
+                          "kind": "Text",
+                          "line": 15,
+                          "column": 77,
+                          "text": "Edit"
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "Text",
+                      "line": 15,
+                      "column": 85,
+                      "text": "\n"
+                    },
+                    {
+                      "kind": "Element",
+                      "line": 16,
+                      "column": 0,
+                      "tag": "button",
+                      "children": [
+                        {
+                          "kind": "Attribute",
+                          "line": 16,
+                          "column": 8,
+                          "name": "type",
+                          "value": "button"
+                        },
+                        {
+                          "kind": "Attribute",
+                          "line": 16,
+                          "column": 22,
+                          "name": "class",
+                          "value": "danger"
+                        },
+                        {
+                          "kind": "Attribute",
+                          "line": 16,
+                          "column": 37,
+                          "name": "data-delete-product",
+                          "expression": "product.id"
+                        },
+                        {
+                          "kind": "Attribute",
+                          "line": 16,
+                          "column": 76,
+                          "name": "data-product-name",
+                          "expression": "product.name"
+                        },
+                        {
+                          "kind": "Text",
+                          "line": 16,
+                          "column": 115,
+                          "text": "Delete"
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "Text",
+                      "line": 16,
+                      "column": 130,
+                      "text": "\n"
                     }
                   ]
                 },
                 {
                   "kind": "Text",
-                  "line": 14,
-                  "column": 48,
+                  "line": 17,
+                  "column": 6,
                   "text": "\n"
                 }
               ]
             },
             {
               "kind": "Text",
-              "line": 15,
+              "line": 18,
               "column": 6,
               "text": "\n"
             },
             {
               "kind": "JinjaStatement",
-              "line": 16,
+              "line": 19,
               "column": 0,
               "statement": "endfor"
             },
             {
               "kind": "Text",
-              "line": 16,
+              "line": 19,
               "column": 12,
               "text": "\n"
             }
@@ -328,19 +410,19 @@
         },
         {
           "kind": "Text",
-          "line": 17,
+          "line": 20,
           "column": 6,
           "text": "\n"
         },
         {
           "kind": "JinjaStatement",
-          "line": 18,
+          "line": 21,
           "column": 0,
           "statement": "endblock"
         },
         {
           "kind": "Text",
-          "line": 18,
+          "line": 21,
           "column": 14,
           "text": "\n"
         }
@@ -468,48 +550,75 @@
                   "line": 6,
                   "column": 77,
                   "text": "\n"
+                },
+                {
+                  "kind": "Element",
+                  "line": 7,
+                  "column": 0,
+                  "tag": "script",
+                  "children": [
+                    {
+                      "kind": "Attribute",
+                      "line": 7,
+                      "column": 8,
+                      "name": "src",
+                      "expression": "url_for('static', filename='script.js')"
+                    },
+                    {
+                      "kind": "Attribute",
+                      "line": 7,
+                      "column": 60,
+                      "name": "defer"
+                    }
+                  ]
+                },
+                {
+                  "kind": "Text",
+                  "line": 7,
+                  "column": 75,
+                  "text": "\n"
                 }
               ]
             },
             {
               "kind": "Text",
-              "line": 7,
+              "line": 8,
               "column": 7,
               "text": "\n"
             },
             {
               "kind": "Element",
-              "line": 8,
+              "line": 9,
               "column": 0,
               "tag": "body",
               "children": [
                 {
                   "kind": "Text",
-                  "line": 8,
+                  "line": 9,
                   "column": 6,
                   "text": "\n"
                 },
                 {
                   "kind": "Element",
-                  "line": 9,
+                  "line": 10,
                   "column": 0,
                   "tag": "header",
                   "children": [
                     {
                       "kind": "Text",
-                      "line": 9,
+                      "line": 10,
                       "column": 8,
                       "text": "\n"
                     },
                     {
                       "kind": "Element",
-                      "line": 10,
+                      "line": 11,
                       "column": 0,
                       "tag": "h1",
                       "children": [
                         {
                           "kind": "Text",
-                          "line": 10,
+                          "line": 11,
                           "column": 4,
                           "text": "Product App"
                         }
@@ -517,38 +626,38 @@
                     },
                     {
                       "kind": "Text",
-                      "line": 10,
+                      "line": 11,
                       "column": 20,
                       "text": "\n"
                     },
                     {
                       "kind": "Element",
-                      "line": 11,
+                      "line": 12,
                       "column": 0,
                       "tag": "nav",
                       "children": [
                         {
                           "kind": "Text",
-                          "line": 11,
+                          "line": 12,
                           "column": 5,
                           "text": "\n"
                         },
                         {
                           "kind": "Element",
-                          "line": 12,
+                          "line": 13,
                           "column": 0,
                           "tag": "a",
                           "children": [
                             {
                               "kind": "Attribute",
-                              "line": 12,
+                              "line": 13,
                               "column": 3,
                               "name": "href",
                               "expression": "url_for('index')"
                             },
                             {
                               "kind": "Text",
-                              "line": 12,
+                              "line": 13,
                               "column": 33,
                               "text": "Home"
                             }
@@ -556,26 +665,26 @@
                         },
                         {
                           "kind": "Text",
-                          "line": 12,
+                          "line": 13,
                           "column": 41,
                           "text": " |\n"
                         },
                         {
                           "kind": "Element",
-                          "line": 13,
+                          "line": 14,
                           "column": 0,
                           "tag": "a",
                           "children": [
                             {
                               "kind": "Attribute",
-                              "line": 13,
+                              "line": 14,
                               "column": 3,
                               "name": "href",
                               "expression": "url_for('add_product')"
                             },
                             {
                               "kind": "Text",
-                              "line": 13,
+                              "line": 14,
                               "column": 39,
                               "text": "Add Product"
                             }
@@ -583,7 +692,7 @@
                         },
                         {
                           "kind": "Text",
-                          "line": 13,
+                          "line": 14,
                           "column": 54,
                           "text": "\n"
                         }
@@ -591,7 +700,7 @@
                     },
                     {
                       "kind": "Text",
-                      "line": 14,
+                      "line": 15,
                       "column": 6,
                       "text": "\n"
                     }
@@ -599,37 +708,37 @@
                 },
                 {
                   "kind": "Text",
-                  "line": 15,
+                  "line": 16,
                   "column": 9,
                   "text": "\n"
                 },
                 {
                   "kind": "Element",
-                  "line": 16,
+                  "line": 17,
                   "column": 0,
                   "tag": "main",
                   "children": [
                     {
                       "kind": "Text",
-                      "line": 16,
+                      "line": 17,
                       "column": 6,
                       "text": "\n"
                     },
                     {
                       "kind": "JinjaStatement",
-                      "line": 17,
+                      "line": 18,
                       "column": 0,
                       "statement": "block content"
                     },
                     {
                       "kind": "JinjaStatement",
-                      "line": 17,
+                      "line": 18,
                       "column": 19,
                       "statement": "endblock"
                     },
                     {
                       "kind": "Text",
-                      "line": 17,
+                      "line": 18,
                       "column": 33,
                       "text": "\n"
                     }
@@ -637,7 +746,7 @@
                 },
                 {
                   "kind": "Text",
-                  "line": 18,
+                  "line": 19,
                   "column": 7,
                   "text": "\n"
                 }
@@ -645,7 +754,7 @@
             },
             {
               "kind": "Text",
-              "line": 19,
+              "line": 20,
               "column": 7,
               "text": "\n"
             }
@@ -653,7 +762,7 @@
         },
         {
           "kind": "Text",
-          "line": 20,
+          "line": 21,
           "column": 7,
           "text": "\n"
         }
@@ -746,9 +855,16 @@
               "value": "POST"
             },
             {
-              "kind": "Text",
+              "kind": "Attribute",
               "line": 5,
               "column": 20,
+              "name": "action",
+              "value": "/api/products"
+            },
+            {
+              "kind": "Text",
+              "line": 5,
+              "column": 43,
               "text": "\n"
             },
             {
@@ -1058,29 +1174,23 @@
           "tag": "h2",
           "children": [
             {
-              "kind": "JinjaExpression",
+              "kind": "Attribute",
               "line": 4,
               "column": 4,
-              "expression": "title"
-            },
-            {
-              "kind": "Text",
-              "line": 4,
-              "column": 15,
-              "text": ": "
+              "name": "data-edit-heading"
             },
             {
               "kind": "JinjaExpression",
               "line": 4,
-              "column": 17,
-              "expression": "product.name"
+              "column": 22,
+              "expression": "title"
             }
           ]
         },
         {
           "kind": "Text",
           "line": 4,
-          "column": 40,
+          "column": 38,
           "text": "\n"
         },
         {
@@ -1093,13 +1203,12 @@
               "kind": "Attribute",
               "line": 5,
               "column": 6,
-              "name": "method",
-              "value": "POST"
+              "name": "data-edit-product-form"
             },
             {
               "kind": "Text",
               "line": 5,
-              "column": 20,
+              "column": 29,
               "text": "\n"
             },
             {
@@ -1154,19 +1263,25 @@
                   "column": 31,
                   "name": "value",
                   "expression": "product.name"
+                },
+                {
+                  "kind": "Attribute",
+                  "line": 7,
+                  "column": 58,
+                  "name": "required"
                 }
               ]
             },
             {
               "kind": "Element",
               "line": 7,
-              "column": 59,
+              "column": 68,
               "tag": "br"
             },
             {
               "kind": "Text",
               "line": 7,
-              "column": 64,
+              "column": 73,
               "text": "\n"
             },
             {
@@ -1179,197 +1294,273 @@
                   "kind": "Text",
                   "line": 8,
                   "column": 7,
+                  "text": "Description:"
+                }
+              ]
+            },
+            {
+              "kind": "Element",
+              "line": 8,
+              "column": 27,
+              "tag": "br"
+            },
+            {
+              "kind": "Text",
+              "line": 8,
+              "column": 32,
+              "text": "\n"
+            },
+            {
+              "kind": "Element",
+              "line": 9,
+              "column": 0,
+              "tag": "textarea",
+              "children": [
+                {
+                  "kind": "Attribute",
+                  "line": 9,
+                  "column": 10,
+                  "name": "name",
+                  "value": "description"
+                },
+                {
+                  "kind": "Attribute",
+                  "line": 9,
+                  "column": 29,
+                  "name": "required"
+                },
+                {
+                  "kind": "JinjaExpression",
+                  "line": 9,
+                  "column": 38,
+                  "expression": "product.description"
+                }
+              ]
+            },
+            {
+              "kind": "Element",
+              "line": 9,
+              "column": 74,
+              "tag": "br"
+            },
+            {
+              "kind": "Text",
+              "line": 9,
+              "column": 79,
+              "text": "\n"
+            },
+            {
+              "kind": "Element",
+              "line": 10,
+              "column": 0,
+              "tag": "label",
+              "children": [
+                {
+                  "kind": "Text",
+                  "line": 10,
+                  "column": 7,
                   "text": "Price:"
                 }
               ]
             },
             {
               "kind": "Element",
-              "line": 8,
+              "line": 10,
               "column": 21,
               "tag": "br"
             },
             {
               "kind": "Text",
-              "line": 8,
+              "line": 10,
               "column": 26,
               "text": "\n"
             },
             {
               "kind": "Element",
-              "line": 9,
+              "line": 11,
               "column": 0,
               "tag": "input",
               "children": [
                 {
                   "kind": "Attribute",
-                  "line": 9,
+                  "line": 11,
                   "column": 7,
                   "name": "type",
                   "value": "number"
                 },
                 {
                   "kind": "Attribute",
-                  "line": 9,
+                  "line": 11,
                   "column": 21,
                   "name": "name",
                   "value": "price"
                 },
                 {
                   "kind": "Attribute",
-                  "line": 9,
+                  "line": 11,
                   "column": 34,
+                  "name": "step",
+                  "value": "0.01"
+                },
+                {
+                  "kind": "Attribute",
+                  "line": 11,
+                  "column": 46,
                   "name": "value",
                   "expression": "product.price"
+                },
+                {
+                  "kind": "Attribute",
+                  "line": 11,
+                  "column": 74,
+                  "name": "required"
                 }
               ]
             },
             {
               "kind": "Element",
-              "line": 9,
-              "column": 63,
+              "line": 11,
+              "column": 84,
               "tag": "br"
             },
             {
               "kind": "Text",
-              "line": 9,
-              "column": 68,
-              "text": "\n"
-            },
-            {
-              "kind": "JinjaStatement",
-              "line": 10,
-              "column": 0,
-              "statement": "if product.price > 500"
-            },
-            {
-              "kind": "Text",
-              "line": 10,
-              "column": 28,
+              "line": 11,
+              "column": 89,
               "text": "\n"
             },
             {
               "kind": "Element",
-              "line": 11,
+              "line": 12,
               "column": 0,
               "tag": "p",
               "children": [
                 {
                   "kind": "Attribute",
-                  "line": 11,
+                  "line": 12,
                   "column": 3,
                   "name": "class",
-                  "value": "note"
+                  "value": "form-status"
                 },
                 {
-                  "kind": "Text",
-                  "line": 11,
-                  "column": 16,
-                  "text": "This is a premium product."
+                  "kind": "Attribute",
+                  "line": 12,
+                  "column": 23,
+                  "name": "data-form-status"
+                },
+                {
+                  "kind": "Attribute",
+                  "line": 12,
+                  "column": 40,
+                  "name": "aria-live",
+                  "value": "polite"
                 }
               ]
             },
             {
               "kind": "Text",
-              "line": 11,
-              "column": 46,
-              "text": "\n"
-            },
-            {
-              "kind": "JinjaStatement",
               "line": 12,
-              "column": 0,
-              "statement": "else"
-            },
-            {
-              "kind": "Text",
-              "line": 12,
-              "column": 10,
+              "column": 63,
               "text": "\n"
             },
             {
               "kind": "Element",
               "line": 13,
               "column": 0,
-              "tag": "p",
+              "tag": "div",
               "children": [
                 {
                   "kind": "Attribute",
                   "line": 13,
-                  "column": 3,
+                  "column": 5,
                   "name": "class",
-                  "value": "note"
+                  "value": "form-actions"
                 },
                 {
                   "kind": "Text",
                   "line": 13,
-                  "column": 16,
-                  "text": "Standard product."
-                }
-              ]
-            },
-            {
-              "kind": "Text",
-              "line": 13,
-              "column": 37,
-              "text": "\n"
-            },
-            {
-              "kind": "JinjaStatement",
-              "line": 14,
-              "column": 0,
-              "statement": "endif"
-            },
-            {
-              "kind": "Text",
-              "line": 14,
-              "column": 11,
-              "text": "\n"
-            },
-            {
-              "kind": "Element",
-              "line": 15,
-              "column": 0,
-              "tag": "button",
-              "children": [
+                  "column": 26,
+                  "text": "\n"
+                },
                 {
-                  "kind": "Attribute",
+                  "kind": "Element",
+                  "line": 14,
+                  "column": 0,
+                  "tag": "button",
+                  "children": [
+                    {
+                      "kind": "Attribute",
+                      "line": 14,
+                      "column": 8,
+                      "name": "type",
+                      "value": "submit"
+                    },
+                    {
+                      "kind": "Text",
+                      "line": 14,
+                      "column": 22,
+                      "text": "Save Changes"
+                    }
+                  ]
+                },
+                {
+                  "kind": "Text",
+                  "line": 14,
+                  "column": 43,
+                  "text": "\n"
+                },
+                {
+                  "kind": "Element",
                   "line": 15,
-                  "column": 8,
-                  "name": "type",
-                  "value": "submit"
+                  "column": 0,
+                  "tag": "a",
+                  "children": [
+                    {
+                      "kind": "Attribute",
+                      "line": 15,
+                      "column": 3,
+                      "name": "href",
+                      "expression": "url_for('index')"
+                    },
+                    {
+                      "kind": "Text",
+                      "line": 15,
+                      "column": 33,
+                      "text": "Cancel"
+                    }
+                  ]
                 },
                 {
                   "kind": "Text",
                   "line": 15,
-                  "column": 22,
-                  "text": "Save"
+                  "column": 43,
+                  "text": "\n"
                 }
               ]
             },
             {
               "kind": "Text",
-              "line": 15,
-              "column": 35,
+              "line": 16,
+              "column": 6,
               "text": "\n"
             }
           ]
         },
         {
           "kind": "Text",
-          "line": 16,
+          "line": 17,
           "column": 7,
           "text": "\n"
         },
         {
           "kind": "JinjaStatement",
-          "line": 17,
+          "line": 18,
           "column": 0,
           "statement": "endblock"
         },
         {
           "kind": "Text",
-          "line": 17,
+          "line": 18,
           "column": 14,
           "text": "\n"
         }

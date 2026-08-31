@@ -7,6 +7,7 @@ public enum DiagnosticCategory {
 
     TYPE_ERROR("Type Error"),
     TYPE_MISMATCH("Type Mismatch"),
+    DIVISION_BY_ZERO("Division by Zero"),
 
     FUNCTION_CALL_ERROR("Function Call Error"),
     DUPLICATE_SYMBOL("Duplicate Symbol"),

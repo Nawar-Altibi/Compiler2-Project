@@ -1,17 +1,18 @@
 {% extends "base.html" %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
-<h2>{{ title }}: {{ product.name }}</h2>
-<form method="POST">
+<h2 data-edit-heading>{{ title }}</h2>
+<form data-edit-product-form>
 <label>Name:</label><br/>
-<input type="text" name="name" value="{{ product.name }}"/><br/>
+<input type="text" name="name" value="{{ product.name }}" required/><br/>
+<label>Description:</label><br/>
+<textarea name="description" required>{{ product.description }}</textarea><br/>
 <label>Price:</label><br/>
-<input type="number" name="price" value="{{ product.price }}"/><br/>
-{% if product.price > 500 %}
-<p class="note">This is a premium product.</p>
-{% else %}
-<p class="note">Standard product.</p>
-{% endif %}
-<button type="submit">Save</button>
+<input type="number" name="price" step="0.01" value="{{ product.price }}" required/><br/>
+<p class="form-status" data-form-status aria-live="polite"></p>
+<div class="form-actions">
+<button type="submit">Save Changes</button>
+<a href="{{ url_for('index') }}">Cancel</a>
+</div>
 </form>
 {% endblock %}

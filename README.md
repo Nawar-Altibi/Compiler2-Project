@@ -27,7 +27,7 @@ output/*.html  +  compiler_output/*  ← خرج مرحلة التوليد
 
 - **قسم Python/Flask** (`src/compilers/flask`): lexer/parser بـ ANTLR، بناء AST، تحقق بنيوي (`AstStructuralValidator`)، جداول رموز، `ScopeRuleChecker`، تحليل دلالي كامل (undefined/types/calls)، ثم **`ContextExtractor`**: مُقيّم شجري صغير (tree-walking) ينفّذ تجهيز البيانات ويلتقط نداءات `render_template` و`url_for` وخريطة الـ routes — ببيانات Java عادية وبلا جدول رموز (حسب تعريف الجامعة للمرحلة).
 - **قسم HTML/CSS/Jinja** (`src/compilers/html_css`): lexer/parser للقوالب، AST يحوي عقد Jinja، و**`JinjaRenderer`**: يبني block-tree من العقد الخام (for/if/block/extends عبر event stream + stack)، يقيّم التعابير `{{ … }}` بمُقيّم recursive-descent مصغّر، يطبّق الوراثة `extends/block`، ويحلّ `url_for` عبر خريطة الـ routes — فيُنتج HTML نهائياً.
-- **الأنبوب المشترك** (`src/compilers/pipeline` + `src/compilers/report`): تنظيم المراحل وبواباتها، وكتابة التقارير الأربعة.
+- **الأنبوب المشترك** (`src/compilers/pipeline` + `src/compilers/report`): تنظيم المراحل وبواباتها، والمراقبة التلقائية لـ `app.py`، وكتابة تقارير الترجمة.
 
 ## ملفات الدخل
 
@@ -70,7 +70,8 @@ $buildDir = ".tmp\build-$(Get-Date -Format yyyyMMddHHmmss)"
 New-Item -ItemType Directory -Path $buildDir | Out-Null
 $javaSources = Get-ChildItem src,Tests -Recurse -Filter *.java |
     Select-Object -ExpandProperty FullName
-javac -encoding UTF-8 -cp lib\antlr-4.13.1-complete.jar -d $buildDir $javaSources
+javac --add-modules jdk.httpserver -encoding UTF-8 `
+    -cp lib\antlr-4.13.1-complete.jar -d $buildDir $javaSources
 ```
 
 ## التشغيل من IntelliJ
@@ -81,6 +82,50 @@ javac -encoding UTF-8 -cp lib\antlr-4.13.1-complete.jar -d $buildDir $javaSource
 
 ```text
 Tests/generation/sample_project/compiler_output/report.html
+```
+
+### التشغيل التلقائي عند تعديل ملفات المشروع
+
+لعرض الـ watcher أمام اللجنة، افتح `src/Main/WatchProjectMain.java` وشغّل
+`WatchProjectMain.main()` من السهم الأخضر. لا يحتاج إلى arguments لمشروع العينة.
+سيجري توليداً أولياً ثم يراقب المشروع recursively. تشمل المصادر: `.py`،
+`.html`، `.jinja`، `.j2`، `.css`، `.js`، والصور والخطوط داخل `static/`
+و`assets/`. عند حفظ أي تعديل يعرض الملف والحدث بوضوح ويعيد المسار كاملاً من
+Python Lexer حتى HTML. يتجاهل `output/` و`compiler_output/` ومجلدات البناء
+لمنع feedback loop.
+
+جرّب تعديل سعر منتج في:
+
+```text
+Tests/generation/sample_project/app.py
+```
+
+بعد الحفظ انتظر رسالة `RESULT: SUCCESS`، ثم حدّث `output/index.html` في المتصفح.
+لإيقاف المراقبة استخدم زر Stop في IntelliJ. الـ watcher يعيد التوليد تلقائياً،
+لكنه ليس Flask server ولا يجري browser refresh تلقائياً.
+
+### العرض الحي: Compiler + Watcher + Java HTTP Server
+
+افتح `src/Main/LiveProjectMain.java` وشغّل `LiveProjectMain.main()` من السهم
+الأخضر. سيبدأ Java HTTP server على:
+
+```text
+http://localhost:8080/index.html
+```
+
+نموذج **Add Product** يرسل `POST /api/products`. وتستخدم الواجهة أيضاً
+`GET /api/products/{id}` لقراءة منتج، و`PUT /api/products/{id}` لتعديله،
+و`DELETE /api/products/{id}` لحذفه. يكتب السيرفر القائمة المحدثة داخل
+`app.py` كتابة ذرّية، ثم يلتقط الـ watcher التعديل ويعيد full compilation من
+الـ Lexer حتى HTML. ينتظر طلب HTTP نجاح إعادة التوليد قبل أن يعيد الاستجابة،
+لذلك تكون الصفحة الجديدة جاهزة وتبقى البيانات بعد إيقاف السيرفر وتشغيله مجدداً.
+
+الـ endpoint مبني على اسم قائمة الـ context، ويستنتج أنواع حقول العنصر من
+العناصر الموجودة بدلاً من وضع أسماء حقول المنتجات داخل كود السيرفر. لتغيير
+المنفذ أو المشروع استخدم Program arguments مثل:
+
+```text
+Tests/generation/sample_project 9090
 ```
 
 لتشغيل مشروع آخر، افتح **Run → Edit Configurations** وأضف مسار مجلده في **Program arguments**، مثلاً:
@@ -147,7 +192,7 @@ Get-ChildItem Tests -Filter *Harness.java | Sort-Object Name | ForEach-Object {
 }
 ```
 
-الحزم: front-end (37+17+14+5) + استخراج السياق (8) + رندرة Jinja (10) + توليد end-to-end بذهبيّات (6) + CLI (8).
+الحزم: front-end (37+18+14+5) + استخراج السياق (8) + رندرة Jinja (11) + توليد end-to-end بذهبيّات (8) + watcher حقيقي (2) + HTTP live-render حقيقي (2) + CLI (8) = **113 اختباراً**.
 
 ## بنية المجلدات
 
@@ -159,9 +204,10 @@ Get-ChildItem Tests -Filter *Harness.java | Sort-Object Name | ForEach-Object {
 | `src/compilers/flask/generation` | `PyEval` + `ContextExtractor` + نموذج بيانات المرحلة |
 | `src/compilers/html_css/antlr`, `ast`, `Visitor` | غرامر القوالب + AST + البُناة |
 | `src/compilers/html_css/render` | `JinjaRenderer` ومُقيّم التعابير والوراثة |
-| `src/compilers/pipeline`, `src/compilers/report` | تنظيم المراحل + التقارير الأربعة |
+| `src/compilers/pipeline`, `src/compilers/report` | تنظيم المراحل + `ProjectWatcher` + التقارير |
+| `src/compilers/server` | Java HTTP server + CRUD دائمة عبر تحديث `app.py` وانتظار إعادة التوليد |
 | `src/compilers/diagnostics` | نظام التشخيصات المشترك |
-| `src/Main/UnifiedMain.java` | CLI فقط |
+| `src/Main/UnifiedMain.java`, `SampleProjectMain.java`, `WatchProjectMain.java`, `LiveProjectMain.java` | CLI + التوليد والمراقبة والعرض الحي من IntelliJ |
 | `Tests/` | الحزم الاختبارية + مشروع العيّنة + الذهبيّات |
 
 > **ملاحظة تاريخية:** نسخة سابقة من المشروع نفّذت مرحلة توليد كاملة كـ Bytecode مخصّص + Python-like VM بلغة Java (61 opcode، CFG verifier، closures/C3/exceptions). أُرشفت بالكامل على برانش `ghaith-work` بعد أن وضّحت الجامعة أن المطلوب هو توليد HTML عبر رندرة القوالب. المعمار الحالي يبقي الـ AST عقداً ثابتاً، فأي backend مستقبلي (بما فيه bytecode) يُضاف كمستهلك موازٍ دون المساس بالموجود.

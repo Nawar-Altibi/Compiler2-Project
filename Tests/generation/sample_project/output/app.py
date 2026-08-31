@@ -5,9 +5,9 @@ app = Flask(__name__)
 store_name = "Products Store"
 
 products = [
-    {"name": "Phone", "price": 300, "description": "A reliable phone"},
-    {"name": "Laptop", "price": 800, "description": "A fast laptop"},
-    {"name": "Headset", "price": 50, "description": "Comfortable headset"}
+    {"id": 1, "name": "Phone", "price": 300, "description": "A reliable phone"},
+    {"id": 2, "name": "Laptop", "price": 800, "description": "A fast laptop"},
+    {"id": 3, "name": "Headset", "price": 3232, "description": "Comfortable headset"}
 ]
 
 def product_count(items):
@@ -37,3 +37,39 @@ def edit_product():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+# ============================================================================
+# SEMANTIC ANALYSIS COMMITTEE DEMO (disabled, so the project stays valid)
+#
+# Activation: replace every "# DEMO " below with an empty string, then Save.
+# The watcher will restart from the Lexer and Semantic Analysis will report:
+#   1) Undefined Variable       : 2 errors
+#   2) Type Error               : 1 error
+#   3) Type Mismatch            : 1 warning
+#   4) Function Call Error      : 2 errors
+#   5) Division by Zero         : 1 error
+# Expected total: 6 errors + 1 warning. Code Generation must stop.
+# To restore the project, Undo once or add "# DEMO " back to every demo line.
+# ----------------------------------------------------------------------------
+
+# DEMO print(undefined_demo_variable)
+
+# DEMO def semantic_scope_demo():
+# DEMO     local_only_value = 10
+
+# DEMO print(local_only_value)
+
+# DEMO invalid_math_result = "price" - 5
+
+# DEMO zero_division_result = 100 / 0
+
+# DEMO changing_type = 10
+# DEMO changing_type = "ten"
+
+# DEMO def semantic_add(left, right):
+# DEMO     return left + right
+
+# DEMO semantic_add(1)
+# DEMO semantic_add(1, 2, 3)
+
+# ============================================================================

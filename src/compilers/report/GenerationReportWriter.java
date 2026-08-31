@@ -69,7 +69,7 @@ public final class GenerationReportWriter {
                 + text(generationLog) + "</pre></details>"
                 + "<details><summary>Semantic analysis</summary><pre>"
                 + text(semanticReport) + "</pre></details></section>\n"
-                + "</main>\n<footer>Deterministic compiler output - no runtime server required</footer>\n"
+                + "</main>\n<footer>Deterministic static output - optional Java live server available</footer>\n"
                 + "</body>\n</html>\n";
     }
 

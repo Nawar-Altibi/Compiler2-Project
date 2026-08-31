@@ -55,6 +55,17 @@ public final class Diagnostics {
                         + " but is reassigned to " + received);
     }
 
+    public static Diagnostic divisionByZero(
+            String operator, int line, int column, String sourceFile) {
+        return semantic(
+                DiagnosticCategory.DIVISION_BY_ZERO,
+                DiagnosticSeverity.ERROR,
+                sourceFile,
+                line,
+                column,
+                "Operator '" + operator + "' cannot use zero as its divisor");
+    }
+
     public static Diagnostic functionCallError(
             String message, int line, int column, String sourceFile) {
         return semantic(

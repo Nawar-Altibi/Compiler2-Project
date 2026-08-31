@@ -29,9 +29,12 @@ import org.antlr.v4.runtime.Recognizer;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
@@ -222,7 +225,7 @@ public final class GenerationPipeline {
                 + copied + " support file(s) copied");
 
         int exitCode = renderFailed ? 2 : 0;
-        return finish(exitCode, paths, generatedPages, reporter, log, appLabel);
+        return finish(exitCode, paths, generatedPages, reporter, log, appLabel, context);
     }
 
     // ==================== helpers ====================
@@ -352,43 +355,90 @@ public final class GenerationPipeline {
             throws IOException {
         int copied = 0;
         List<String> names = new ArrayList<>();
-        copied += copyIfExists(paths.projectDir.resolve("app.py"),
+        copied += copyFileOrDelete(paths.projectDir.resolve("app.py"),
                 paths.outputDir.resolve("app.py"), names);
-        copied += copyIfExists(paths.projectDir.resolve("style.css"),
+        copied += copyFileOrDelete(paths.projectDir.resolve("style.css"),
                 paths.outputDir.resolve("style.css"), names);
-        copied += copyIfExists(paths.projectDir.resolve("script.js"),
+        copied += copyFileOrDelete(paths.projectDir.resolve("script.js"),
                 paths.outputDir.resolve("script.js"), names);
-
-        Path templates = paths.projectDir.resolve("templates");
-        if (Files.isDirectory(templates)) {
-            Path target = paths.outputDir.resolve("templates");
-            Files.createDirectories(target);
-            try (DirectoryStream<Path> stream = Files.newDirectoryStream(templates)) {
-                for (Path file : stream) {
-                    if (Files.isRegularFile(file)) {
-                        Files.copy(file, target.resolve(file.getFileName().toString()),
-                                StandardCopyOption.REPLACE_EXISTING);
-                        copied++;
-                    }
-                }
-            }
-            names.add("templates/");
-        }
+        copied += mirrorDirectory(paths.projectDir.resolve("templates"),
+                paths.outputDir.resolve("templates"), "templates/", names);
+        copied += mirrorDirectory(paths.projectDir.resolve("static"),
+                paths.outputDir.resolve("static"), "static/", names);
+        copied += mirrorDirectory(paths.projectDir.resolve("assets"),
+                paths.outputDir.resolve("assets"), "assets/", names);
         if (!names.isEmpty()) {
             log.copy(String.join(", ", names));
         }
         return copied;
     }
 
-    private int copyIfExists(Path from, Path to, List<String> names)
+    private int copyFileOrDelete(Path from, Path to, List<String> names)
             throws IOException {
         if (!Files.isRegularFile(from)) {
+            Files.deleteIfExists(to);
             return 0;
         }
         Files.createDirectories(to.getParent());
         Files.copy(from, to, StandardCopyOption.REPLACE_EXISTING);
         names.add(from.getFileName().toString());
         return 1;
+    }
+
+    private int mirrorDirectory(
+            Path source, Path target, String label, List<String> names)
+            throws IOException {
+        deleteTree(target);
+        if (!Files.isDirectory(source)) {
+            return 0;
+        }
+
+        final int[] copied = {0};
+        Files.walkFileTree(source, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult preVisitDirectory(
+                    Path directory, BasicFileAttributes attributes) throws IOException {
+                Files.createDirectories(target.resolve(source.relativize(directory)));
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(
+                    Path file, BasicFileAttributes attributes) throws IOException {
+                if (attributes.isRegularFile()) {
+                    Path destination = target.resolve(source.relativize(file));
+                    Files.copy(file, destination, StandardCopyOption.REPLACE_EXISTING);
+                    copied[0]++;
+                }
+                return FileVisitResult.CONTINUE;
+            }
+        });
+        names.add(label);
+        return copied[0];
+    }
+
+    private void deleteTree(Path target) throws IOException {
+        if (!Files.exists(target)) {
+            return;
+        }
+        Files.walkFileTree(target, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(
+                    Path file, BasicFileAttributes attributes) throws IOException {
+                Files.delete(file);
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult postVisitDirectory(
+                    Path directory, IOException failure) throws IOException {
+                if (failure != null) {
+                    throw failure;
+                }
+                Files.delete(directory);
+                return FileVisitResult.CONTINUE;
+            }
+        });
     }
 
     private GenerationResult finish(
@@ -398,6 +448,17 @@ public final class GenerationPipeline {
             DiagnosticReporter reporter,
             GenerationLog log,
             String appLabel) throws IOException {
+        return finish(exitCode, paths, generatedPages, reporter, log, appLabel, null);
+    }
+
+    private GenerationResult finish(
+            int exitCode,
+            ProjectPaths paths,
+            List<String> generatedPages,
+            DiagnosticReporter reporter,
+            GenerationLog log,
+            String appLabel,
+            ProjectContext projectContext) throws IOException {
         String semanticReport = SemanticReportWriter.write(appLabel, reporter);
         log.report("report.html generated");
         String logText = log.text();
@@ -413,7 +474,7 @@ public final class GenerationPipeline {
                         semanticReport,
                         logText));
         return new GenerationResult(exitCode, paths.outputDir, paths.reportsDir,
-                generatedPages, reporter, logText);
+                generatedPages, reporter, logText, projectContext);
     }
 
     private static void writeText(Path file, String content) throws IOException {

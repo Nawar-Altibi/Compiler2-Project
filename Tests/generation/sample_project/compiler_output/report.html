@@ -16,7 +16,6 @@
 <section><div class="section-heading"><h2>Compiler artifacts</h2><span>Inspect each compilation stage</span></div><nav class="artifact-links"><a href="ast_python.json">Python AST</a><a href="ast_jinja.json">Jinja AST</a><a href="semantic_report.txt">Semantic report</a><a href="generation_log.txt">Generation log</a></nav></section>
 <section><details open><summary>Generation pipeline</summary><pre>[parse]     app.py -&gt; Python AST (9 top-level statements)
 [semantic]  0 error(s), 0 warning(s)
-[clean]     3 stale generated page(s) removed
 [extract]   from flask import 4 name(s)
 [extract]   route  GET / -&gt; view index
 [extract]   route  GET,POST /add -&gt; view add_product
@@ -27,9 +26,9 @@
 [warn]      condition not evaluable (Unsupported attribute access '.method' on UnsupportedRef) -&gt; treated as False (GET view)
 [extract]   GET /add -&gt; render &quot;add_product.jinja&quot; context=[title]
 [extract]   GET /edit -&gt; render &quot;edit_product.jinja&quot; context=[title, product]
-[render]    &quot;index.jinja&quot; -&gt; output/index.html (840 bytes)
-[render]    &quot;add_product.jinja&quot; -&gt; output/add_product.html (661 bytes)
-[render]    &quot;edit_product.jinja&quot; -&gt; output/edit_product.html (607 bytes)
+[render]    &quot;index.jinja&quot; -&gt; output/index.html (1408 bytes)
+[render]    &quot;add_product.jinja&quot; -&gt; output/add_product.html (724 bytes)
+[render]    &quot;edit_product.jinja&quot; -&gt; output/edit_product.html (903 bytes)
 [render]    index.jinja extends base.html
 [render]    add_product.jinja extends base.html
 [render]    edit_product.jinja extends base.html
@@ -43,6 +42,6 @@ No errors. No warnings.
 The program is valid for generation.
 </pre></details></section>
 </main>
-<footer>Deterministic compiler output - no runtime server required</footer>
+<footer>Deterministic static output - optional Java live server available</footer>
 </body>
 </html>

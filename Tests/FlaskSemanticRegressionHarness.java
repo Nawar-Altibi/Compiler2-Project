@@ -42,6 +42,7 @@ public final class FlaskSemanticRegressionHarness {
         run("Pass 1 reports duplicates only", FlaskSemanticRegressionHarness::testPassOneOnly);
         run("undefined-variable fixture", FlaskSemanticRegressionHarness::testUndefinedVariables);
         run("type-error fixture", FlaskSemanticRegressionHarness::testTypeErrors);
+        run("literal division by zero", FlaskSemanticRegressionHarness::testDivisionByZero);
         run("type-mismatch warnings", FlaskSemanticRegressionHarness::testTypeMismatchWarnings);
         run("reassignment updates observed type",
                 FlaskSemanticRegressionHarness::testReassignmentUpdatesObservedType);
@@ -93,6 +94,21 @@ public final class FlaskSemanticRegressionHarness {
         Analysis analysis = analyzeFixture("errors", "type_error.py");
         assertOnlyCategory(analysis.reporter, DiagnosticCategory.TYPE_ERROR, 4);
         equal(4, analysis.reporter.errors().size(), "type errors are hard errors");
+    }
+
+    private static void testDivisionByZero() {
+        Analysis analysis = analyze(lines(
+                "a = 10 / 0",
+                "b = 10 // 0",
+                "c = 10 % 0",
+                "d = 10 / 0.0",
+                "e = 10 / False",
+                "valid = 0 / 10",
+                "text_format = \"%s\" % 0"), "division-by-zero.py");
+        assertOnlyCategory(
+                analysis.reporter, DiagnosticCategory.DIVISION_BY_ZERO, 5);
+        equal(5, analysis.reporter.errors().size(),
+                "division by zero diagnostics are hard errors");
     }
 
     private static void testTypeMismatchWarnings() throws IOException {
